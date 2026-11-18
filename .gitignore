@@ -1,0 +1,4 @@
+tns
+dist/
+*.log
+.DS_Store
