@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -14,7 +15,20 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{ReadBufferSize: 8192, WriteBufferSize: 32768} // default CheckOrigin: same host only
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  8192,
+	WriteBufferSize: 32768,
+	CheckOrigin: func(r *http.Request) bool {
+		if validPeerKey(r) {
+			return true
+		}
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true
+		}
+		return strings.HasSuffix(origin, "://"+r.Host)
+	},
+}
 
 func pickShell() string {
 	if s := os.Getenv("SHELL"); s != "" {
@@ -31,6 +45,15 @@ func pickShell() string {
 }
 
 func handleTerminal(w http.ResponseWriter, r *http.Request) {
+	if id := targetNodeID(r); id != "" && id != "local" {
+		peer, ok := getPeerNode(id)
+		if !ok {
+			httpErr(w, http.StatusNotFound, "server not found: "+id)
+			return
+		}
+		proxyTerminalWS(w, r, peer)
+		return
+	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
@@ -40,7 +63,7 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 	var cmd *exec.Cmd
 	if id := r.URL.Query().Get("container"); id != "" {
 		if !reContainerID.MatchString(id) || !hasCmd("docker") {
-			_ = conn.WriteMessage(websocket.BinaryMessage, []byte("\r\n\x1b[31mDocker CLI không khả dụng hoặc container không hợp lệ.\x1b[0m\r\n"))
+			_ = conn.WriteMessage(websocket.BinaryMessage, []byte("\r\n\x1b[31mDocker CLI unavailable or invalid container ID.\x1b[0m\r\n"))
 			return
 		}
 		cmd = exec.Command("docker", "exec", "-it", "-e", "TERM=xterm-256color", id, "/bin/sh", "-c",
@@ -64,7 +87,7 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Cols: 120, Rows: 32})
 	if err != nil {
-		_ = conn.WriteMessage(websocket.BinaryMessage, []byte("\r\nKhông khởi chạy được shell: "+err.Error()+"\r\n"))
+		_ = conn.WriteMessage(websocket.BinaryMessage, []byte("\r\nFailed to start shell: "+err.Error()+"\r\n"))
 		return
 	}
 	defer func() {

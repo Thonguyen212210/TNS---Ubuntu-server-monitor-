@@ -1,35 +1,55 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f1b2d">
-<title>TNS Panel</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231a73e8'/%3E%3Crect x='7' y='8' width='18' height='4' fill='%23fff'/%3E%3Crect x='14' y='12' width='4' height='13' fill='%23fff'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="app.css">
+<meta name="theme-color" content="#0f243e">
+<title>Azure Cloud Console</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='40' y1='10' x2='18' y2='86' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23114A8B'/%3E%3Cstop offset='1' stop-color='%230669BC'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='52' y1='49' x2='44' y2='52' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23000' stop-opacity='.3'/%3E%3Cstop offset='1' stop-color='%23000' stop-opacity='0'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' x1='47' y1='10' x2='72' y2='85' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%233CCBF4'/%3E%3Cstop offset='1' stop-color='%232892DF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23a)' d='M33.3 6.5h26.1L32.3 86.7a4.1 4.1 0 01-3.9 2.8H8.1a4.1 4.1 0 01-3.9-5.5L29.4 9.3a4.1 4.1 0 013.9-2.8z'/%3E%3Cpath fill='%230078D4' d='M71.2 60.3H29.9a1.9 1.9 0 00-1.3 3.3l26.5 24.8a4.2 4.2 0 002.9 1.1h23.4z'/%3E%3Cpath fill='url(%23b)' d='M33.3 6.5a4.1 4.1 0 00-3.9 2.9L4.2 83.9a4.1 4.1 0 003.9 5.6h20.8a4.4 4.4 0 003.4-2.9l5-14.8 17.9 16.7a4.2 4.2 0 002.7 1h23.3L71 60.3H41.2L59.5 6.5z'/%3E%3Cpath fill='url(%23c)' d='M66.6 9.3a4.1 4.1 0 00-3.9-2.8H33.6a4.1 4.1 0 013.9 2.8l25.2 74.7a4.1 4.1 0 01-3.9 5.5h29.1a4.1 4.1 0 003.9-5.5z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css?v=1.2.1">
 </head>
 <body>
 <!-- auth screen -->
 <div id="auth" class="auth hidden">
   <div class="auth-wrap">
-    <div class="auth-brand"><span class="logo-box">TNS</span><span class="auth-brand-t">Server Console</span></div>
+    <div class="auth-brand">
+      <svg class="az-logo lg" viewBox="0 0 96 96" aria-hidden="true">
+        <defs>
+          <linearGradient id="azA1" x1="40" y1="10" x2="18" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#114A8B"/><stop offset="1" stop-color="#0669BC"/></linearGradient>
+          <linearGradient id="azA2" x1="47" y1="10" x2="72" y2="85" gradientUnits="userSpaceOnUse"><stop stop-color="#3CCBF4"/><stop offset="1" stop-color="#2892DF"/></linearGradient>
+        </defs>
+        <path fill="url(#azA1)" d="M33.3 6.5h26.1L32.3 86.7a4.1 4.1 0 01-3.9 2.8H8.1a4.1 4.1 0 01-3.9-5.5L29.4 9.3a4.1 4.1 0 013.9-2.8z"/>
+        <path fill="#0078D4" d="M71.2 60.3H29.9a1.9 1.9 0 00-1.3 3.3l26.5 24.8a4.2 4.2 0 002.9 1.1h23.4z"/>
+        <path fill="url(#azA2)" d="M66.6 9.3a4.1 4.1 0 00-3.9-2.8H33.6a4.1 4.1 0 013.9 2.8l25.2 74.7a4.1 4.1 0 01-3.9 5.5h29.1a4.1 4.1 0 003.9-5.5z"/>
+      </svg>
+      <div class="auth-brand-stack">
+        <span class="auth-brand-t">Microsoft Azure</span>
+        <span class="auth-brand-s">Cloud Infrastructure &amp; VM Console</span>
+      </div>
+    </div>
     <div class="auth-card card">
-      <h1 class="auth-title" id="authTitle">Đăng nhập</h1>
+      <h1 class="auth-title" id="authTitle">Sign in</h1>
       <p class="auth-host" id="authHost">—</p>
+      <div id="pkLoginBox" class="hidden" style="margin-bottom:14px">
+        <button class="btn primary wide" id="pkLoginBtn" type="button"><svg class="ico"><use href="#i-key"/></svg>Sign in with Passkey</button>
+        <div class="auth-div" id="pkDiv"><span>or use password</span></div>
+      </div>
       <form id="authForm" autocomplete="off">
         <p class="auth-hint" id="authHint"></p>
-        <label class="field"><span>Mật khẩu</span>
+        <label class="field hidden" id="tokWrap"><span>Setup token</span>
+          <input id="setupTok" class="mono" autocomplete="off" spellcheck="false" placeholder="XXXXXX-XXXXXX-XXXXXX"></label>
+        <label class="field"><span>Password</span>
           <input type="password" id="pw1" autocomplete="current-password" required></label>
-        <label class="field hidden" id="pw2wrap"><span>Nhập lại mật khẩu</span>
+        <label class="field hidden" id="pw2wrap"><span>Confirm password</span>
           <input type="password" id="pw2" autocomplete="new-password"></label>
         <div class="strength hidden" id="strength"><i></i></div>
         <div class="pw-tools">
-          <label><input type="checkbox" id="pwShow"> Hiện mật khẩu</label>
+          <label><input type="checkbox" id="pwShow"> Show password</label>
           <span class="mono" id="pwCount"></span>
         </div>
-        <div class="auth-err" id="authErr"></div>
-        <button class="btn primary wide" id="authBtn" type="submit">Đăng nhập</button>
+        <button class="btn primary wide" id="authBtn" type="submit">Sign in</button>
       </form>
+      <div class="auth-err" id="authErr" style="margin-top:10px"></div>
     </div>
   </div>
 </div>
@@ -38,22 +58,45 @@
 <div id="app" class="hidden">
   <header class="topbar">
     <button class="tb-btn menu-btn" id="menuBtn" title="Menu"><svg class="ico"><use href="#i-menu"/></svg></button>
-    <a class="tb-brand" href="#/dashboard"><span class="logo-box">TNS</span><span class="tb-brand-t">Server Console</span></a>
-    <span class="tb-host"><svg class="ico sm"><use href="#i-server"/></svg><b id="tbHost">—</b></span>
+    <a class="tb-brand" href="#/azure">
+      <svg class="az-logo" viewBox="0 0 96 96" aria-hidden="true">
+        <defs>
+          <linearGradient id="azT1" x1="40" y1="10" x2="18" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#1E88E5"/><stop offset="1" stop-color="#0078D4"/></linearGradient>
+          <linearGradient id="azT2" x1="47" y1="10" x2="72" y2="85" gradientUnits="userSpaceOnUse"><stop stop-color="#50E6FF"/><stop offset="1" stop-color="#2892DF"/></linearGradient>
+        </defs>
+        <path fill="url(#azT1)" d="M33.3 6.5h26.1L32.3 86.7a4.1 4.1 0 01-3.9 2.8H8.1a4.1 4.1 0 01-3.9-5.5L29.4 9.3a4.1 4.1 0 013.9-2.8z"/>
+        <path fill="#0078D4" d="M71.2 60.3H29.9a1.9 1.9 0 00-1.3 3.3l26.5 24.8a4.2 4.2 0 002.9 1.1h23.4z"/>
+        <path fill="url(#azT2)" d="M66.6 9.3a4.1 4.1 0 00-3.9-2.8H33.6a4.1 4.1 0 013.9 2.8l25.2 74.7a4.1 4.1 0 01-3.9 5.5h29.1a4.1 4.1 0 003.9-5.5z"/>
+      </svg>
+      <span class="tb-brand-t">Azure</span>
+      <span class="tb-brand-sub hide-xs">Console</span>
+    </a>
+    <div class="node-pick" id="nodePick">
+      <button class="tb-host node-btn" id="nodeBtn" type="button" title="Switch target server">
+        <i class="dot ok" id="nodeDot"></i>
+        <svg class="ico sm"><use href="#i-server"/></svg>
+        <b id="tbHost">—</b>
+        <span class="node-sub hide-xs" id="tbNodeSub"></span>
+        <svg class="ico sm node-chev"><use href="#i-chev"/></svg>
+      </button>
+      <div class="node-menu card hidden" id="nodeMenu"></div>
+    </div>
     <span class="badge demo hidden" id="demoBadge">DEMO</span>
     <span class="tb-sp"></span>
     <span class="tb-stat mono hide-sm" id="tbLive">CPU — · RAM —</span>
     <span class="tb-stat mono hide-sm" id="tbUp">Uptime —</span>
     <span class="tb-stat mono hide-xs" id="tbClock">--:--:--</span>
-    <button class="tb-btn" id="themeBtn" title="Đổi giao diện sáng / tối"><svg class="ico"><use href="#i-theme"/></svg></button>
-    <button class="tb-btn" id="logoutBtn" title="Đăng xuất"><svg class="ico"><use href="#i-logout"/></svg><span class="hide-sm">Đăng xuất</span></button>
+    <a class="tb-btn" href="#/settings" title="Settings &amp; Passkeys" style="text-decoration:none"><svg class="ico"><use href="#i-gear"/></svg><span class="hide-sm">Settings</span></a>
+    <button class="tb-btn" id="themeBtn" title="Toggle light / dark theme"><svg class="ico"><use href="#i-theme"/></svg></button>
+    <button class="tb-btn" id="logoutBtn" title="Sign out"><svg class="ico"><use href="#i-logout"/></svg><span class="hide-sm">Sign out</span></button>
   </header>
   <div class="shell">
     <aside class="nav"><nav id="navList"></nav></aside>
     <div class="nav-scrim" id="navScrim"></div>
     <main class="main">
+      <div id="nodeBanner" class="node-banner hidden"></div>
       <div class="page-head">
-        <div class="crumbs-top"><a href="#/dashboard">TNS</a><span>›</span><span id="crumbCur">—</span></div>
+        <div class="crumbs-top"><a href="#/azure">Azure</a><span>›</span><span id="crumbNode">—</span><span>›</span><span id="crumbCur">—</span></div>
         <h1 id="pageTitle">—</h1>
         <p id="pageSub"></p>
       </div>
@@ -68,6 +111,14 @@
 <!-- icon sprite -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M6.5 19h11a4.5 4.5 0 00.9-8.9A6 6 0 006.8 8.3 4.5 4.5 0 006.5 19z"/></symbol>
+    <symbol id="i-tailscale" viewBox="0 0 24 24"><circle cx="6" cy="6" r="1.7" fill="currentColor" stroke="none" opacity=".45"/><circle cx="12" cy="6" r="1.7" fill="currentColor" stroke="none" opacity=".45"/><circle cx="18" cy="6" r="1.7" fill="currentColor" stroke="none" opacity=".45"/><circle cx="6" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="6" cy="18" r="1.7" fill="currentColor" stroke="none" opacity=".45"/><circle cx="12" cy="18" r="1.7" fill="currentColor" stroke="none"/><circle cx="18" cy="18" r="1.7" fill="currentColor" stroke="none" opacity=".45"/></symbol>
+    <symbol id="i-net" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="9" y="15" width="6" height="6" rx="1"/><path d="M6 9v3h12V9M12 12v3"/></symbol>
+    <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 000-6H9a3 3 0 010-6h6.5"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v9M17.6 6.4a8 8 0 11-11.2 0"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 01-10 0V8zM12 16v5"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M10.85 12.15L19 4M16 7l3 3M13.5 9.5l2.5 2.5"/></symbol>
     <symbol id="i-dash" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.6-3.3 8.3-8 9-4.7-.7-8-4.4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
@@ -111,7 +162,9 @@
 </svg>
 
 <script src="vendor/worldmask.js"></script>
-<script src="app.js"></script>
-<script src="pages.js"></script>
+<script src="app.js?v=1.2.1"></script>
+<script src="pages.js?v=1.2.1"></script>
+<script src="azure.js?v=1.2.1"></script>
+<script src="tailscale.js?v=1.2.1"></script>
 </body>
 </html>

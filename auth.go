@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/subtle"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/hex"
@@ -16,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 	"unicode/utf8"
@@ -30,6 +32,9 @@ type Store struct {
 	mu           sync.Mutex
 	PasswordHash string    `json:"password_hash"`
 	SetAt        time.Time `json:"set_at"`
+	UserHandle   string    `json:"user_handle,omitempty"`
+	Passkeys     []Passkey `json:"passkeys,omitempty"`
+	PasskeyOnly  bool      `json:"passkey_only,omitempty"`
 }
 
 var store = &Store{}
@@ -81,6 +86,7 @@ func (s *Store) reset() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.PasswordHash = ""
+	s.PasskeyOnly = false
 	_ = s.save()
 }
 
@@ -124,10 +130,14 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, tok string, maxAge
 	})
 }
 
-// auth wraps a handler: requires a valid session; state-changing requests must
+// auth wraps a handler: requires a valid session (or peer cluster key); state-changing requests must
 // also carry the X-TNS header (blocks cross-site form posts).
 func auth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if validPeerKey(r) {
+			h(w, r)
+			return
+		}
 		if !validSession(r) {
 			httpErr(w, http.StatusUnauthorized, "unauthorized")
 			return
@@ -194,20 +204,23 @@ func clearFail(ip string) {
 func handleAuthState(w http.ResponseWriter, r *http.Request) {
 	host, _ := os.Hostname()
 	writeJSON(w, map[string]any{
-		"setup":    !store.hasPassword(),
-		"authed":   validSession(r),
-		"hostname": host,
-		"version":  appVersion,
-		"demo":     *flagDemo,
+		"setup":       !store.hasPassword(),
+		"needToken":   !store.hasPassword() && !isLoopback(r),
+		"authed":      validSession(r),
+		"hasPasskey":  store.hasPasskeys(),
+		"passkeyOnly": store.isPasskeyOnly(),
+		"hostname":    host,
+		"version":     appVersion,
+		"demo":        *flagDemo,
 	})
 }
 
 func validPassword(pw string) string {
 	if n := utf8.RuneCountInString(pw); n < 8 {
-		return fmt.Sprintf("Mật khẩu cần ít nhất 8 ký tự (máy chủ nhận được %d)", n)
+		return fmt.Sprintf("Password must be at least 8 characters (received %d)", n)
 	}
 	if len(pw) > 72 {
-		return "Mật khẩu tối đa 72 byte"
+		return "Password must be at most 72 bytes"
 	}
 	return ""
 }
@@ -217,10 +230,23 @@ func handleSetup(w http.ResponseWriter, r *http.Request) {
 		httpErr(w, http.StatusConflict, "already initialized")
 		return
 	}
-	var req struct{ Password string }
+	var req struct{ Password, Token string }
 	if err := readJSON(r, &req); err != nil {
 		httpErr(w, 400, "bad request")
 		return
+	}
+	ip := clientIP(r)
+	if !isLoopback(r) {
+		if d := lockedOut(ip); d > 0 {
+			httpErr(w, http.StatusTooManyRequests, "Too many attempts. Try again in "+d.Round(time.Second).String())
+			return
+		}
+		if tok := setupToken(); tok == "" || subtle.ConstantTimeCompare([]byte(strings.TrimSpace(req.Token)), []byte(tok)) != 1 {
+			recordFail(ip)
+			log.Printf("setup rejected from %s: bad setup token", ip)
+			httpErr(w, 403, "Invalid setup token. View on server: sudo cat "+setupTokenPath())
+			return
+		}
 	}
 	if msg := validPassword(req.Password); msg != "" {
 		log.Printf("setup rejected from %s: %s", clientIP(r), msg)
@@ -231,14 +257,20 @@ func handleSetup(w http.ResponseWriter, r *http.Request) {
 		httpErr(w, 500, err.Error())
 		return
 	}
+	_ = os.Remove(setupTokenPath())
+	log.Printf("admin password set from %s", ip)
 	setSessionCookie(w, r, newSession(), int(sessionTTL.Seconds()))
 	writeJSON(w, map[string]bool{"ok": true})
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
+	if store.isPasskeyOnly() {
+		httpErr(w, http.StatusForbidden, "Password login is disabled — please sign in with a Passkey")
+		return
+	}
 	ip := clientIP(r)
 	if d := lockedOut(ip); d > 0 {
-		httpErr(w, http.StatusTooManyRequests, "Quá nhiều lần thử. Thử lại sau "+d.Round(time.Second).String())
+		httpErr(w, http.StatusTooManyRequests, "Too many attempts. Try again in "+d.Round(time.Second).String())
 		return
 	}
 	var req struct{ Password string }
@@ -250,7 +282,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		recordFail(ip)
 		recordPanelLogin(ip, false)
 		time.Sleep(400 * time.Millisecond)
-		httpErr(w, http.StatusUnauthorized, "Sai mật khẩu")
+		httpErr(w, http.StatusUnauthorized, "Incorrect password")
 		return
 	}
 	clearFail(ip)
@@ -276,7 +308,7 @@ func handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !store.check(req.Current) {
-		httpErr(w, 403, "Mật khẩu hiện tại không đúng")
+		httpErr(w, 403, "Current password is incorrect")
 		return
 	}
 	if msg := validPassword(req.New); msg != "" {
@@ -310,7 +342,7 @@ func ensureSelfSignedCert(dir string) (string, string, error) {
 	serial, _ := rand.Int(rand.Reader, big.NewInt(1<<62))
 	tmpl := x509.Certificate{
 		SerialNumber: serial,
-		Subject:      pkix.Name{CommonName: host, Organization: []string{"TNS Panel"}},
+		Subject:      pkix.Name{CommonName: host, Organization: []string{"Azure TNS Console"}},
 		NotBefore:    time.Now().Add(-time.Hour),
 		NotAfter:     time.Now().AddDate(5, 0, 0),
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
@@ -335,4 +367,35 @@ func ensureSelfSignedCert(dir string) (string, string, error) {
 		return "", "", err
 	}
 	return certPath, keyPath, nil
+}
+
+// ---------- one-time setup token ----------
+// Until a password exists, remote clients must present a token that is only
+// readable on the server, so nobody else can claim a freshly installed panel.
+
+func setupTokenPath() string { return filepath.Join(dataDir, "setup-token") }
+
+func setupToken() string {
+	b, err := os.ReadFile(setupTokenPath())
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+func ensureSetupToken() string {
+	if t := setupToken(); t != "" {
+		return t
+	}
+	b := make([]byte, 9)
+	_, _ = rand.Read(b)
+	t := strings.ToUpper(hex.EncodeToString(b))
+	t = t[0:6] + "-" + t[6:12] + "-" + t[12:18]
+	_ = os.WriteFile(setupTokenPath(), []byte(t+"\n"), 0o600)
+	return t
+}
+
+func isLoopback(r *http.Request) bool {
+	ip := net.ParseIP(clientIP(r))
+	return ip != nil && ip.IsLoopback()
 }

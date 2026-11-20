@@ -20,14 +20,19 @@ fi
 install -m 0755 "$BIN" /usr/local/bin/tns
 mkdir -p /var/lib/tns && chmod 700 /var/lib/tns
 
-cat > /etc/systemd/system/tns.service <<'EOF'
+FLAGS="-addr :1611 -data /var/lib/tns"
+[ "${TNS_TLS:-1}" = "1" ] && FLAGS="$FLAGS -tls"   # HTTPS mặc định; TNS_TLS=0 để tắt
+SCHEME=https; [ "${TNS_TLS:-1}" = "1" ] || SCHEME=http
+
+systemctl stop tns 2>/dev/null || true
+cat > /etc/systemd/system/tns.service <<EOF
 [Unit]
 Description=TNS server panel
 After=network-online.target docker.service
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/local/bin/tns -addr :1611 -data /var/lib/tns
+ExecStart=/usr/local/bin/tns $FLAGS
 Restart=on-failure
 RestartSec=3
 User=root
@@ -46,9 +51,12 @@ systemctl --no-pager --lines=3 status tns || true
 
 IP=$(hostname -I 2>/dev/null | awk '{print $1}')
 echo
-echo "✔ TNS đã chạy:  http://${IP:-<server-ip>}:1611"
-echo "  Lần đầu mở trang sẽ yêu cầu đặt mật khẩu quản trị."
+echo "✔ TNS đã chạy:  $SCHEME://${IP:-<server-ip>}:1611"
+if [ -f /var/lib/tns/setup-token ]; then
+  echo "  Lần đầu mở trang: nhập MÃ THIẾT LẬP dưới đây rồi đặt mật khẩu quản trị."
+  echo "  Mã thiết lập: $(cat /var/lib/tns/setup-token)   (xem lại: sudo cat /var/lib/tns/setup-token)"
+fi
 if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
   echo "  ufw đang bật — mở cổng nếu cần:  sudo ufw allow 1611/tcp"
 fi
-echo "  Khuyến nghị: chạy với HTTPS — sửa ExecStart thêm cờ -tls, rồi: systemctl restart tns"
+[ "$SCHEME" = https ] && echo "  Chứng chỉ tự ký: trình duyệt sẽ cảnh báo lần đầu — chọn 'Advanced → Proceed'."

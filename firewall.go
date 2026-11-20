@@ -80,7 +80,7 @@ func getFirewall() FWState {
 	case "ufw":
 		out, err := runCmd(15*time.Second, "ufw", "status", "numbered")
 		if err != nil {
-			return FWState{Backend: b, Rules: []FWRule{}, Note: "Cần quyền root để đọc ufw: " + firstLine(out)}
+			return FWState{Backend: b, Rules: []FWRule{}, Note: "Root privileges required to read ufw: " + firstLine(out)}
 		}
 		verbose, _ := runCmd(15*time.Second, "ufw", "status", "verbose")
 		return parseUfw(out, verbose)
@@ -91,7 +91,7 @@ func getFirewall() FWState {
 	case "demo":
 		return demoFirewall()
 	}
-	return FWState{Backend: "none", Rules: []FWRule{}, Note: "Không tìm thấy ufw / firewalld / iptables trên máy này."}
+	return FWState{Backend: "none", Rules: []FWRule{}, Note: "No supported firewall (ufw / firewalld / iptables) found on this machine."}
 }
 
 func getFirewalld() FWState {
@@ -151,10 +151,10 @@ func getFirewalld() FWState {
 
 func getIptables() FWState {
 	st := FWState{Backend: "iptables", Rules: []FWRule{}, Active: true,
-		Note: "Quy tắc iptables thay đổi tại đây sẽ mất sau khi khởi động lại (trừ khi dùng iptables-persistent)."}
+		Note: "iptables changes made here will not persist across reboots unless iptables-persistent is installed."}
 	out, err := runCmd(10*time.Second, "iptables", "-S", "INPUT")
 	if err != nil {
-		st.Note = "Cần quyền root: " + firstLine(out)
+		st.Note = "Root privileges required: " + firstLine(out)
 		return st
 	}
 	n := 0
@@ -273,28 +273,28 @@ func (q *fwReq) validate() error {
 	}
 	q.Action = strings.ToLower(q.Action)
 	if q.Action != "allow" && q.Action != "deny" && q.Action != "reject" && q.Action != "limit" {
-		return fmt.Errorf("hành động không hợp lệ")
+		return fmt.Errorf("invalid action")
 	}
 	if q.Proto == "" {
 		q.Proto = "any"
 	}
 	if q.Proto != "tcp" && q.Proto != "udp" && q.Proto != "any" {
-		return fmt.Errorf("giao thức không hợp lệ")
+		return fmt.Errorf("invalid protocol")
 	}
 	if q.Port != "" && !rePort.MatchString(q.Port) {
-		return fmt.Errorf("cổng không hợp lệ (vd: 80 hoặc 8000:8100)")
+		return fmt.Errorf("invalid port (e.g. 80 or 8000:8100)")
 	}
 	if strings.Contains(q.Port, ":") && q.Proto == "any" {
-		return fmt.Errorf("dải cổng cần chọn tcp hoặc udp")
+		return fmt.Errorf("port range requires tcp or udp")
 	}
 	if !validFrom(q.From) {
-		return fmt.Errorf("địa chỉ nguồn không hợp lệ")
+		return fmt.Errorf("invalid source address")
 	}
 	if q.Port == "" && (q.From == "" || q.From == "any") {
-		return fmt.Errorf("cần nhập cổng hoặc địa chỉ nguồn")
+		return fmt.Errorf("port or source address is required")
 	}
 	if !reComment.MatchString(q.Comment) {
-		return fmt.Errorf("ghi chú chỉ gồm chữ, số, khoảng trắng (tối đa 60)")
+		return fmt.Errorf("comment may only contain letters, numbers, and spaces (max 60)")
 	}
 	return nil
 }
@@ -344,7 +344,7 @@ func handleFirewallAction(w http.ResponseWriter, r *http.Request) {
 	case "demo":
 		out, err = demoFirewallAction(q)
 	default:
-		httpErr(w, 400, "không có tường lửa được hỗ trợ")
+		httpErr(w, 400, "no supported firewall backend")
 		return
 	}
 	if err != nil {
@@ -366,13 +366,13 @@ func ufwAction(q fwReq) (string, error) {
 		return run("disable")
 	case "default":
 		if q.Policy != "allow" && q.Policy != "deny" {
-			return "", fmt.Errorf("policy không hợp lệ")
+			return "", fmt.Errorf("invalid policy")
 		}
 		return run("default", q.Policy, "incoming")
 	case "delete":
 		n, err := strconv.Atoi(q.ID)
 		if err != nil || n < 1 {
-			return "", fmt.Errorf("id không hợp lệ")
+			return "", fmt.Errorf("invalid rule ID")
 		}
 		return run("--force", "delete", strconv.Itoa(n))
 	case "add":
@@ -401,7 +401,7 @@ func ufwAction(q fwReq) (string, error) {
 		}
 		return run(args...)
 	}
-	return "", fmt.Errorf("op không hợp lệ")
+	return "", fmt.Errorf("invalid operation")
 }
 
 func firstRuleLine(s string) string {
@@ -437,7 +437,7 @@ func firewalldAction(q fwReq) (string, error) {
 		case "rich":
 			return reload(run("--permanent", "--remove-rich-rule="+val))
 		}
-		return "", fmt.Errorf("id không hợp lệ")
+		return "", fmt.Errorf("invalid rule ID")
 	case "add":
 		from := q.From
 		if (from == "" || from == "any") && q.Action == "allow" && q.Proto != "any" {
@@ -462,14 +462,14 @@ func firewalldAction(q fwReq) (string, error) {
 		rule += " " + act
 		return reload(run("--permanent", "--add-rich-rule="+rule))
 	}
-	return "", fmt.Errorf("op không hợp lệ cho firewalld")
+	return "", fmt.Errorf("invalid operation for firewalld")
 }
 
 func iptablesAction(q fwReq) (string, error) {
 	switch q.Op {
 	case "delete":
 		if !strings.HasPrefix(q.ID, "-A INPUT ") {
-			return "", fmt.Errorf("id không hợp lệ")
+			return "", fmt.Errorf("invalid rule ID")
 		}
 		args := append([]string{"-D"}, splitArgs(strings.TrimPrefix(q.ID, "-A "))...)
 		return runCmd(15*time.Second, "iptables", args...)
@@ -480,7 +480,7 @@ func iptablesAction(q fwReq) (string, error) {
 		}
 		if q.From != "" && q.From != "any" {
 			if strings.Contains(q.From, ":") {
-				return "", fmt.Errorf("iptables backend chỉ hỗ trợ IPv4")
+				return "", fmt.Errorf("iptables backend only supports IPv4")
 			}
 			args = append(args, "-s", q.From)
 		}
@@ -498,5 +498,5 @@ func iptablesAction(q fwReq) (string, error) {
 		args = append(args, "-j", j)
 		return runCmd(15*time.Second, "iptables", args...)
 	}
-	return "", fmt.Errorf("iptables backend chỉ hỗ trợ thêm/xoá quy tắc")
+	return "", fmt.Errorf("iptables backend only supports add/delete rules")
 }

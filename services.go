@@ -30,7 +30,7 @@ func handleServices(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, map[string]any{"available": true, "services": demoServices(), "demo": true})
 			return
 		}
-		writeJSON(w, map[string]any{"available": false, "note": "Máy này không dùng systemd."})
+		writeJSON(w, map[string]any{"available": false, "note": "This server does not use systemd."})
 		return
 	}
 	out, err := runCmd(20*time.Second, "systemctl", "list-units", "--type=service", "--all", "--no-pager", "--no-legend", "--plain")
@@ -96,13 +96,13 @@ func handleServiceAction(w http.ResponseWriter, r *http.Request) {
 	}
 	q.Unit = normUnit(q.Unit)
 	if !reUnit.MatchString(q.Unit) {
-		httpErr(w, 400, "tên service không hợp lệ")
+		httpErr(w, 400, "invalid service name")
 		return
 	}
 	switch q.Op {
 	case "start", "stop", "restart", "reload", "enable", "disable":
 	default:
-		httpErr(w, 400, "op không hợp lệ")
+		httpErr(w, 400, "invalid operation")
 		return
 	}
 	if !hasCmd("systemctl") && *flagDemo {
@@ -121,7 +121,7 @@ func handleServiceAction(w http.ResponseWriter, r *http.Request) {
 func handleServiceLogs(w http.ResponseWriter, r *http.Request) {
 	u := normUnit(r.URL.Query().Get("unit"))
 	if !reUnit.MatchString(u) {
-		httpErr(w, 400, "tên service không hợp lệ")
+		httpErr(w, 400, "invalid service name")
 		return
 	}
 	if !hasCmd("journalctl") {
@@ -212,7 +212,7 @@ func contains(a []string, s string) bool {
 func sitePath(kind, name string) (string, error) {
 	root := nginxRoot()
 	if root == "" || !reSiteName.MatchString(name) {
-		return "", fmt.Errorf("tên site không hợp lệ")
+		return "", fmt.Errorf("invalid site name")
 	}
 	switch kind {
 	case "sites":
@@ -220,7 +220,7 @@ func sitePath(kind, name string) (string, error) {
 	case "conf.d":
 		return filepath.Join(root, "conf.d", name), nil
 	}
-	return "", fmt.Errorf("loại không hợp lệ")
+	return "", fmt.Errorf("invalid site kind")
 }
 
 func listSites() []Site {
@@ -270,7 +270,7 @@ func nginxStatus() (bool, string) {
 
 func handleSites(w http.ResponseWriter, r *http.Request) {
 	if nginxRoot() == "" {
-		writeJSON(w, map[string]any{"available": false, "note": "Chưa cài Nginx (/etc/nginx không tồn tại)."})
+		writeJSON(w, map[string]any{"available": false, "note": "Nginx is not installed (/etc/nginx not found)."})
 		return
 	}
 	running, ver := nginxStatus()
@@ -372,7 +372,7 @@ func handleSiteAction(w http.ResponseWriter, r *http.Request) {
 	}
 	root := nginxRoot()
 	if root == "" {
-		httpErr(w, 400, "nginx chưa được cài")
+		httpErr(w, 400, "nginx is not installed")
 		return
 	}
 	fail := func(code int, msg string) { httpErr(w, code, msg) }
@@ -397,15 +397,15 @@ func handleSiteAction(w http.ResponseWriter, r *http.Request) {
 		return
 	case "create":
 		if !reSiteName.MatchString(q.Name) || !reDomain.MatchString(q.Domain) {
-			fail(400, "tên site hoặc domain không hợp lệ")
+			fail(400, "invalid site name or domain")
 			return
 		}
 		if q.Template == "proxy" && !reUpstream.MatchString(q.Upstream) {
-			fail(400, "upstream phải dạng http://127.0.0.1:3000")
+			fail(400, "upstream must be like http://127.0.0.1:3000")
 			return
 		}
 		if q.Template != "proxy" && !reWebRoot.MatchString(q.Root) {
-			fail(400, "thư mục web không hợp lệ")
+			fail(400, "invalid web root path")
 			return
 		}
 		kind, name := "sites", q.Name
@@ -417,7 +417,7 @@ func handleSiteAction(w http.ResponseWriter, r *http.Request) {
 		}
 		p, _ := sitePath(kind, name)
 		if _, err := os.Stat(p); err == nil {
-			fail(409, "site đã tồn tại")
+			fail(409, "site already exists")
 			return
 		}
 		if err := os.WriteFile(p, []byte(siteTemplate(q.Template, q.Domain, q.Root, q.Upstream)), 0o644); err != nil {
@@ -430,7 +430,7 @@ func handleSiteAction(w http.ResponseWriter, r *http.Request) {
 		if out, err := nginxTest(); err != nil {
 			_ = os.Remove(filepath.Join(root, "sites-enabled", name))
 			_ = os.Remove(p)
-			fail(400, "nginx -t lỗi, đã huỷ:\n"+out)
+			fail(400, "nginx -t failed, reverted:\n"+out)
 			return
 		}
 		out, _ := nginxReload()
@@ -444,7 +444,7 @@ func handleSiteAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := os.Stat(p); err != nil {
-		fail(404, "không tìm thấy site")
+		fail(404, "site not found")
 		return
 	}
 	switch q.Op {
@@ -463,14 +463,14 @@ func handleSiteAction(w http.ResponseWriter, r *http.Request) {
 		if enabled {
 			if out, err := nginxTest(); err != nil {
 				_ = os.WriteFile(p, old, 0o644)
-				fail(400, "nginx -t lỗi — đã khôi phục bản cũ:\n"+out)
+				fail(400, "nginx -t failed — restored previous config:\n"+out)
 				return
 			}
 			out, _ := nginxReload()
-			ok("Đã lưu và reload nginx.\n" + out)
+			ok("Saved and reloaded Nginx.\n" + out)
 			return
 		}
-		ok("Đã lưu (site đang tắt nên chưa reload).")
+		ok("Saved (site is disabled; Nginx not reloaded).")
 	case "enable", "disable":
 		var undo func()
 		if q.Kind == "sites" {
@@ -498,7 +498,7 @@ func handleSiteAction(w http.ResponseWriter, r *http.Request) {
 			if undo != nil {
 				undo()
 			}
-			fail(400, "nginx -t lỗi, đã hoàn tác:\n"+out)
+			fail(400, "nginx -t failed, reverted:\n"+out)
 			return
 		}
 		out, _ := nginxReload()
@@ -515,6 +515,6 @@ func handleSiteAction(w http.ResponseWriter, r *http.Request) {
 		out, _ := nginxReload()
 		ok(out)
 	default:
-		fail(400, "op không hợp lệ")
+		fail(400, "invalid operation")
 	}
 }

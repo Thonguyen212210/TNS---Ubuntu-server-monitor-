@@ -1,5 +1,5 @@
 'use strict';
-/* TNS Panel — firewall, apps, files, terminal, settings. Depends on app.js. */
+/* Azure Cloud Console — firewall, apps, files, terminal, settings. Depends on app.js. */
 
 const LS = {
   get(k, d) { try { const v = localStorage.getItem('tns.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -32,12 +32,12 @@ function codeEditor(host, text, { readOnly = false, onSave } = {}) {
 }
 
 function logModal(title, loader) {
-  const m = openModal({ title, size: 'lg', flush: true, body: `<div style="padding:14px 18px;overflow:auto;flex:1" class="lg-scroll"><pre class="log">Đang tải…</pre></div>` });
-  $('.mh-extra', m).innerHTML = `<button class="btn sm" data-r>${ico('refresh', 'sm')}Làm mới</button>`;
+  const m = openModal({ title, size: 'lg', flush: true, body: `<div style="padding:14px 18px;overflow:auto;flex:1" class="lg-scroll"><pre class="log">Loading…</pre></div>` });
+  $('.mh-extra', m).innerHTML = `<button class="btn sm" data-r>${ico('refresh', 'sm')}Refresh</button>`;
   const load = async () => {
     try {
       const t = await loader();
-      $('pre', m).textContent = t || '(trống)';
+      $('pre', m).textContent = t || '(empty)';
       const sc = $('.lg-scroll', m); sc.scrollTop = sc.scrollHeight;
     } catch (e) { $('pre', m).textContent = e.message; }
   };
@@ -47,32 +47,32 @@ function logModal(title, loader) {
 
 // ================= firewall =================
 pages.firewall = {
-  title: 'Tường lửa', sub: 'Quản lý quy tắc truy cập mạng',
+  title: 'OS Firewall', sub: 'Manage host-level network access rules (UFW / firewalld / iptables)',
   mount(v) {
     v.innerHTML = `<div id="fwNote"></div>
     <div class="grid g-main">
-      <div class="card"><div class="card-h"><span class="card-t">Quy tắc</span><span class="card-sub" id="fwCount"></span><span class="sp"></span>
-        <button class="btn sm" id="fwRefresh">${ico('refresh', 'sm')}Làm mới</button></div>
-        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Đích</th><th>Hành động</th><th>Nguồn</th><th>Ghi chú</th><th></th></tr></thead><tbody id="fwBody"></tbody></table></div></div>
+      <div class="card"><div class="card-h"><span class="card-t">Rules</span><span class="card-sub" id="fwCount"></span><span class="sp"></span>
+        <button class="btn sm" id="fwRefresh">${ico('refresh', 'sm')}Refresh</button></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>To</th><th>Action</th><th>From</th><th>Comment</th><th></th></tr></thead><tbody id="fwBody"></tbody></table></div></div>
       <div class="grid" style="align-content:start">
-        <div class="card"><div class="card-h"><span class="card-t">Trạng thái</span><span class="sp"></span><span id="fwBackend"></span></div>
+        <div class="card"><div class="card-h"><span class="card-t">Status</span><span class="sp"></span><span id="fwBackend"></span></div>
           <div class="row" style="justify-content:space-between"><div><div style="font-weight:600" id="fwState">—</div><div class="card-sub" id="fwDefault"></div></div>
-          <label class="switch" title="Bật/tắt tường lửa"><input type="checkbox" id="fwToggle"><i></i></label></div>
-          <div class="row mt" id="fwPolicy"><span class="card-sub">Mặc định chiều vào:</span><div class="seg"><button data-p="deny">Chặn</button><button data-p="allow">Cho phép</button></div></div>
+          <label class="switch" title="Enable/disable firewall"><input type="checkbox" id="fwToggle"><i></i></label></div>
+          <div class="row mt" id="fwPolicy"><span class="card-sub">Default incoming policy:</span><div class="seg"><button data-p="deny">Deny</button><button data-p="allow">Allow</button></div></div>
         </div>
-        <div class="card"><div class="card-h"><span class="card-t">Thêm quy tắc</span></div>
+        <div class="card"><div class="card-h"><span class="card-t">Add Rule</span></div>
           <form class="form" id="fwForm">
             <div class="row" style="flex-wrap:wrap;gap:6px" id="fwPresets">
               ${[['SSH', 22], ['HTTP', 80], ['HTTPS', 443], ['TNS', 1611], ['MySQL', 3306], ['Postgres', 5432], ['Redis', 6379]].map(([n, p]) => `<button type="button" class="btn sm" data-port="${p}">${n} <span class="dim mono">${p}</span></button>`).join('')}
             </div>
             <div class="grid g2" style="gap:10px">
-              <label class="field"><span>Hành động</span><select name="action"><option value="allow">Cho phép (allow)</option><option value="deny">Chặn (deny)</option><option value="reject">Từ chối (reject)</option><option value="limit">Giới hạn (limit)</option></select></label>
-              <label class="field"><span>Giao thức</span><select name="proto"><option value="tcp">TCP</option><option value="udp">UDP</option><option value="any">Bất kỳ</option></select></label>
-              <label class="field"><span>Cổng</span><input name="port" placeholder="80 hoặc 8000:8100" class="mono"></label>
-              <label class="field"><span>Nguồn (IP/CIDR)</span><input name="from" placeholder="any" class="mono"></label>
+              <label class="field"><span>Action</span><select name="action"><option value="allow">Allow</option><option value="deny">Deny</option><option value="reject">Reject</option><option value="limit">Limit</option></select></label>
+              <label class="field"><span>Protocol</span><select name="proto"><option value="tcp">TCP</option><option value="udp">UDP</option><option value="any">Any</option></select></label>
+              <label class="field"><span>Port</span><input name="port" placeholder="80 or 8000:8100" class="mono"></label>
+              <label class="field"><span>Source (IP/CIDR)</span><input name="from" placeholder="any" class="mono"></label>
             </div>
-            <label class="field"><span>Ghi chú</span><input name="comment" maxlength="60" placeholder="tuỳ chọn"></label>
-            <button class="btn primary" type="submit">${ico('plus', 'sm')}Thêm quy tắc</button>
+            <label class="field"><span>Comment</span><input name="comment" maxlength="60" placeholder="optional"></label>
+            <button class="btn primary" type="submit">${ico('plus', 'sm')}Add Rule</button>
           </form></div>
       </div>
     </div>`;
@@ -82,25 +82,25 @@ pages.firewall = {
       st = await api('/api/firewall');
       $('#fwNote').innerHTML = st.note ? `<div class="note ${st.backend === 'demo' ? '' : 'info'}">${esc(st.note)}</div>` : '';
       $('#fwBackend').innerHTML = `<span class="badge acc">${esc(st.backend)}</span>`;
-      $('#fwState').innerHTML = st.backend === 'none' ? 'Không khả dụng' : st.active ? '<span style="color:var(--ok)">● Đang hoạt động</span>' : '<span style="color:var(--warn)">● Đang tắt</span>';
+      $('#fwState').innerHTML = st.backend === 'none' ? 'Unavailable' : st.active ? '<span style="color:var(--ok)">● Active</span>' : '<span style="color:var(--warn)">● Inactive</span>';
       $('#fwDefault').textContent = st.default || '';
       $('#fwToggle').checked = st.active;
       $('#fwToggle').disabled = st.backend === 'none' || st.backend === 'iptables';
       $('#fwPolicy').classList.toggle('hidden', !(st.backend === 'ufw' || st.backend === 'demo'));
       const pol = (st.default || '').startsWith('allow') ? 'allow' : 'deny';
       $$('#fwPolicy button').forEach(b => b.classList.toggle('on', b.dataset.p === pol));
-      $('#fwCount').textContent = st.rules.length + ' quy tắc';
+      $('#fwCount').textContent = st.rules.length + ' rules';
       $('#fwBody').innerHTML = st.rules.map((r, i) => {
         const a = r.action.split(' ')[0];
         const cls = a === 'ALLOW' ? 'ok' : a === 'LIMIT' ? 'warn' : 'bad';
         return `<tr><td class="mono dim">${r.num || i + 1}</td><td class="mono">${esc(r.to)}</td>
           <td><span class="badge ${cls}">${esc(r.action)}</span></td><td class="mono">${esc(r.from)}</td>
           <td class="dim"><div class="trunc">${esc(r.comment || '')}</div></td>
-          <td><div class="acts"><button class="btn sm icon danger" data-del="${esc(r.id)}" data-desc="${esc(r.action + ' ' + r.to + ' từ ' + r.from)}" title="Xoá">${ico('trash', 'sm')}</button></div></td></tr>`;
-      }).join('') || `<tr><td colspan="6" class="empty">Chưa có quy tắc nào</td></tr>`;
+          <td><div class="acts"><button class="btn sm icon danger" data-del="${esc(r.id)}" data-desc="${esc(r.action + ' ' + r.to + ' from ' + r.from)}" title="Delete">${ico('trash', 'sm')}</button></div></td></tr>`;
+      }).join('') || `<tr><td colspan="6" class="empty">No firewall rules configured</td></tr>`;
     };
     const act = async (body, msg) => {
-      try { const r = await api('/api/firewall', { body }); toast(msg || r.output || 'Đã cập nhật'); } catch (e) { toastErr(e); }
+      try { const r = await api('/api/firewall', { body }); toast(msg || r.output || 'Updated'); } catch (e) { toastErr(e); }
       load();
     };
     load().catch(toastErr);
@@ -108,8 +108,8 @@ pages.firewall = {
     $('#fwToggle').onchange = async e => {
       const on = e.target.checked;
       const ok = await confirmBox(on
-        ? 'Bật tường lửa? TNS sẽ tự động mở cổng SSH và cổng bảng điều khiển trước để tránh bị khoá ngoài.'
-        : 'Tắt tường lửa? Mọi cổng sẽ được mở.', { ok: on ? 'Bật' : 'Tắt', danger: !on });
+        ? 'Enable OS firewall? SSH and the console port will be allowed automatically to prevent lockout.'
+        : 'Disable OS firewall? All host ports will be open.', { ok: on ? 'Enable' : 'Disable', danger: !on });
       if (!ok) { e.target.checked = !on; return; }
       act({ op: on ? 'enable' : 'disable' });
     };
@@ -122,21 +122,21 @@ pages.firewall = {
     $('#fwForm').onsubmit = e => {
       e.preventDefault();
       const f = e.target;
-      act({ op: 'add', action: f.action.value, proto: f.proto.value, port: f.port.value.trim(), from: f.from.value.trim() || 'any', comment: f.comment.value.trim() }, 'Đã thêm quy tắc');
+      act({ op: 'add', action: f.action.value, proto: f.proto.value, port: f.port.value.trim(), from: f.from.value.trim() || 'any', comment: f.comment.value.trim() }, 'Rule added');
       f.port.value = ''; f.from.value = ''; f.comment.value = '';
     };
     $('#fwBody').onclick = async e => {
       const b = e.target.closest('[data-del]'); if (!b) return;
-      if (await confirmBox(`Xoá quy tắc <b class="mono">${b.dataset.desc}</b>?`, { ok: 'Xoá', danger: true })) act({ op: 'delete', id: b.dataset.del }, 'Đã xoá quy tắc');
+      if (await confirmBox(`Delete rule <b class="mono">${b.dataset.desc}</b>?`, { ok: 'Delete', danger: true })) act({ op: 'delete', id: b.dataset.del }, 'Rule deleted');
     };
   },
 };
 
 // ================= apps =================
 pages.apps = {
-  title: 'Ứng dụng & dịch vụ', sub: 'Docker, website Nginx, systemd và cổng mạng',
+  title: 'Apps & Services', sub: 'Docker containers, Nginx websites, systemd services, and listening ports',
   mount(v) {
-    const tabs = [['docker', 'Docker'], ['sites', 'Website'], ['services', 'Dịch vụ'], ['ports', 'Cổng mở']];
+    const tabs = [['docker', 'Docker'], ['sites', 'Websites'], ['services', 'Services'], ['ports', 'Open Ports']];
     let tab = LS.get('appsTab', 'docker');
     v.innerHTML = `<div class="tabs" id="appTabs">${tabs.map(([k, l]) => `<button class="tab" data-t="${k}">${l}</button>`).join('')}</div><div id="appBody"></div>`;
     let stop = null;
@@ -158,21 +158,21 @@ const stateDot = s => s === 'running' || s === 'active' ? 'ok' : s === 'paused' 
 const appTabs = {
   docker(el) {
     el.innerHTML = `<div id="dkNote"></div>
-      <div class="card"><div class="card-h"><span class="card-t">Container</span><span class="card-sub" id="dkSum"></span><span class="sp"></span>
-        <button class="btn sm" id="dkRefresh">${ico('refresh', 'sm')}Làm mới</button></div>
-        <div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Tên</th><th>Image</th><th>Cổng</th><th class="num">CPU</th><th class="num">RAM</th><th>Trạng thái</th><th></th></tr></thead><tbody id="dkBody"></tbody></table></div></div>
+      <div class="card"><div class="card-h"><span class="card-t">Containers</span><span class="card-sub" id="dkSum"></span><span class="sp"></span>
+        <button class="btn sm" id="dkRefresh">${ico('refresh', 'sm')}Refresh</button></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Name</th><th>Image</th><th>Ports</th><th class="num">CPU</th><th class="num">RAM</th><th>Status</th><th></th></tr></thead><tbody id="dkBody"></tbody></table></div></div>
       <div class="card mt"><div class="card-h"><span class="card-t">Images</span><span class="card-sub" id="imgSum"></span></div>
-        <div class="tbl-wrap" style="max-height:320px"><table class="tbl"><thead><tr><th>ID</th><th>Tag</th><th class="num">Dung lượng</th><th></th></tr></thead><tbody id="imgBody"></tbody></table></div></div>`;
+        <div class="tbl-wrap" style="max-height:320px"><table class="tbl"><thead><tr><th>ID</th><th>Tags</th><th class="num">Size</th><th></th></tr></thead><tbody id="imgBody"></tbody></table></div></div>`;
     const load = async () => {
       const d = await api('/api/docker');
       if (!d.available) {
         $('#dkNote').innerHTML = `<div class="note info">${esc(d.note)}</div>`;
-        $('#dkBody').innerHTML = `<tr><td colspan="8" class="empty">Docker không khả dụng</td></tr>`;
+        $('#dkBody').innerHTML = `<tr><td colspan="8" class="empty">Docker is unavailable</td></tr>`;
         return;
       }
-      $('#dkNote').innerHTML = d.demo ? `<div class="note">Chế độ demo — trên Linux sẽ điều khiển Docker thật qua /var/run/docker.sock.</div>` : '';
+      $('#dkNote').innerHTML = d.demo ? `<div class="note">Demo mode — manages real Docker containers via /var/run/docker.sock on Linux.</div>` : '';
       const run = d.containers.filter(c => c.state === 'running').length;
-      $('#dkSum').textContent = `${run}/${d.containers.length} đang chạy · Docker ${d.version || ''}`;
+      $('#dkSum').textContent = `${run}/${d.containers.length} running · Docker ${d.version || ''}`;
       $('#dkBody').innerHTML = d.containers.map(c => {
         const running = c.state === 'running', paused = c.state === 'paused';
         return `<tr><td><i class="dot ${stateDot(c.state)} ${running ? 'pulse' : ''}"></i></td>
@@ -183,20 +183,20 @@ const appTabs = {
         <td class="num">${running ? fmtBytes(c.mem) : '<span class="dim">—</span>'}</td>
         <td class="dim" style="white-space:nowrap">${esc(c.status)}</td>
         <td><div class="acts">
-          ${running || paused ? '' : `<button class="btn sm icon" data-op="start" data-id="${c.id}" title="Khởi động">${ico('play', 'sm')}</button>`}
-          ${running ? `<button class="btn sm icon" data-op="pause" data-id="${c.id}" title="Tạm dừng">${ico('pause', 'sm')}</button>` : ''}
-          ${paused ? `<button class="btn sm icon" data-op="unpause" data-id="${c.id}" title="Tiếp tục">${ico('play', 'sm')}</button>` : ''}
-          ${running || paused ? `<button class="btn sm icon" data-op="stop" data-id="${c.id}" title="Dừng">${ico('stop', 'sm')}</button>` : ''}
-          <button class="btn sm icon" data-op="restart" data-id="${c.id}" title="Khởi động lại">${ico('restart', 'sm')}</button>
-          <button class="btn sm icon" data-op="logs" data-id="${c.id}" data-name="${esc(c.name)}" title="Xem log">${ico('log', 'sm')}</button>
-          ${running ? `<button class="btn sm icon" data-op="shell" data-id="${c.id}" data-name="${esc(c.name)}" title="Mở shell">${ico('term', 'sm')}</button>` : ''}
-          <button class="btn sm icon danger" data-op="remove" data-id="${c.id}" data-name="${esc(c.name)}" title="Xoá">${ico('trash', 'sm')}</button>
+          ${running || paused ? '' : `<button class="btn sm icon" data-op="start" data-id="${c.id}" title="Start">${ico('play', 'sm')}</button>`}
+          ${running ? `<button class="btn sm icon" data-op="pause" data-id="${c.id}" title="Pause">${ico('pause', 'sm')}</button>` : ''}
+          ${paused ? `<button class="btn sm icon" data-op="unpause" data-id="${c.id}" title="Resume">${ico('play', 'sm')}</button>` : ''}
+          ${running || paused ? `<button class="btn sm icon" data-op="stop" data-id="${c.id}" title="Stop">${ico('stop', 'sm')}</button>` : ''}
+          <button class="btn sm icon" data-op="restart" data-id="${c.id}" title="Restart">${ico('restart', 'sm')}</button>
+          <button class="btn sm icon" data-op="logs" data-id="${c.id}" data-name="${esc(c.name)}" title="Logs">${ico('log', 'sm')}</button>
+          ${running ? `<button class="btn sm icon" data-op="shell" data-id="${c.id}" data-name="${esc(c.name)}" title="Open shell">${ico('term', 'sm')}</button>` : ''}
+          <button class="btn sm icon danger" data-op="remove" data-id="${c.id}" data-name="${esc(c.name)}" title="Remove">${ico('trash', 'sm')}</button>
         </div></td></tr>`;
-      }).join('') || `<tr><td colspan="8" class="empty">Chưa có container nào</td></tr>`;
+      }).join('') || `<tr><td colspan="8" class="empty">No containers found</td></tr>`;
       const imgs = d.images || [];
       $('#imgSum').textContent = `${imgs.length} images · ${fmtBytes(imgs.reduce((s, i) => s + i.size, 0))}`;
       $('#imgBody').innerHTML = imgs.map(i => `<tr><td class="mono dim">${esc(i.id)}</td><td class="mono">${esc((i.tags || []).join(', ') || '<none>')}</td>
-        <td class="num">${fmtBytes(i.size)}</td><td><div class="acts"><button class="btn sm icon danger" data-op="rmi" data-id="${esc(i.id)}" data-name="${esc((i.tags || [])[0] || i.id)}" title="Xoá image">${ico('trash', 'sm')}</button></div></td></tr>`).join('')
+        <td class="num">${fmtBytes(i.size)}</td><td><div class="acts"><button class="btn sm icon danger" data-op="rmi" data-id="${esc(i.id)}" data-name="${esc((i.tags || [])[0] || i.id)}" title="Remove image">${ico('trash', 'sm')}</button></div></td></tr>`).join('')
         || `<tr><td colspan="4" class="empty">—</td></tr>`;
     };
     every(8000, load);
@@ -204,9 +204,9 @@ const appTabs = {
     el.onclick = async e => {
       const b = e.target.closest('[data-op]'); if (!b) return;
       const { op, id, name } = b.dataset;
-      if (op === 'logs') return logModal('Log · ' + name, async () => (await api('/api/docker/logs?id=' + encodeURIComponent(id))).logs);
+      if (op === 'logs') return logModal('Logs · ' + name, async () => (await api('/api/docker/logs?id=' + encodeURIComponent(id))).logs);
       if (op === 'shell') return Term.open({ container: id, title: name });
-      if ((op === 'remove' || op === 'rmi') && !await confirmBox(`Xoá ${op === 'rmi' ? 'image' : 'container'} <b class="mono">${esc(name)}</b>?`, { ok: 'Xoá', danger: true })) return;
+      if ((op === 'remove' || op === 'rmi') && !await confirmBox(`Remove ${op === 'rmi' ? 'image' : 'container'} <b class="mono">${esc(name)}</b>?`, { ok: 'Remove', danger: true })) return;
       b.disabled = true;
       try { await api('/api/docker/action', { body: { id, op } }); toast(`${op} ${name || id}: OK`); } catch (ex) { toastErr(ex); }
       load();
@@ -217,28 +217,28 @@ const appTabs = {
     el.innerHTML = `<div id="stNote"></div>
       <div class="card" style="margin-bottom:14px"><div class="row">
         <span class="card-t">Nginx</span><span id="ngStatus"></span><span class="card-sub mono" id="ngVer"></span><span class="sp" style="flex:1"></span>
-        <button class="btn sm" id="ngTest">${ico('check', 'sm')}Kiểm tra cấu hình</button>
+        <button class="btn sm" id="ngTest">${ico('check', 'sm')}Test Config</button>
         <button class="btn sm" id="ngReload">${ico('refresh', 'sm')}Reload</button>
-        <button class="btn sm primary" id="ngNew">${ico('plus', 'sm')}Website mới</button></div></div>
+        <button class="btn sm primary" id="ngNew">${ico('plus', 'sm')}New Website</button></div></div>
       <div class="sites" id="siteList"></div>`;
     const load = async () => {
       const d = await api('/api/sites');
       if (!d.available) { $('#stNote').innerHTML = `<div class="note info">${esc(d.note)}</div>`; $('#siteList').innerHTML = ''; el.querySelectorAll('.btn').forEach(b => b.disabled = true); return; }
-      $('#stNote').innerHTML = d.demo ? `<div class="note">Chế độ demo — cấu hình mẫu lưu trong ${esc(d.root)}. Trên Linux sẽ quản lý /etc/nginx thật.</div>` : '';
+      $('#stNote').innerHTML = d.demo ? `<div class="note">Demo mode — sample configs stored in ${esc(d.root)}. Manages /etc/nginx on Linux.</div>` : '';
       $('#ngStatus').innerHTML = d.running ? '<span class="badge ok">RUNNING</span>' : '<span class="badge bad">STOPPED</span>';
       $('#ngVer').textContent = d.version || '';
       $('#siteList').innerHTML = (d.sites || []).map(s => `<div class="card site">
         <h4><i class="dot ${s.enabled ? 'ok' : ''}"></i><span title="${esc(s.name)}">${esc(s.name)}</span>${s.ssl ? '<span class="badge ok">SSL</span>' : ''}<span class="badge">${esc(s.kind)}</span></h4>
         <div class="meta">
-          <div>${(s.domains || []).map(dm => `<a href="http${s.ssl ? 's' : ''}://${esc(dm)}" target="_blank" rel="noopener">${esc(dm)}</a>`).join(' ') || '<span>(không có server_name)</span>'}</div>
+          <div>${(s.domains || []).map(dm => `<a href="http${s.ssl ? 's' : ''}://${esc(dm)}" target="_blank" rel="noopener">${esc(dm)}</a>`).join(' ') || '<span>(no server_name)</span>'}</div>
           <div>listen <b>${esc((s.listen || []).join(', ') || '—')}</b></div>
           ${s.proxy ? `<div>→ proxy <b>${esc(s.proxy)}</b></div>` : ''}${s.root ? `<div>root <b>${esc(s.root)}</b></div>` : ''}
         </div>
-        <div class="row"><label class="switch" title="${s.enabled ? 'Tắt' : 'Bật'} site"><input type="checkbox" ${s.enabled ? 'checked' : ''} data-toggle="${esc(s.name)}" data-kind="${esc(s.kind)}"><i></i></label>
-          <span class="card-sub">${s.enabled ? 'Đang bật' : 'Đang tắt'}</span><span style="flex:1"></span>
-          <button class="btn sm" data-edit="${esc(s.name)}" data-kind="${esc(s.kind)}">${ico('edit', 'sm')}Sửa</button>
-          <button class="btn sm icon danger" data-delsite="${esc(s.name)}" data-kind="${esc(s.kind)}" title="Xoá">${ico('trash', 'sm')}</button></div></div>`).join('')
-        || '<div class="empty">Chưa có website nào</div>';
+        <div class="row"><label class="switch" title="${s.enabled ? 'Disable' : 'Enable'} site"><input type="checkbox" ${s.enabled ? 'checked' : ''} data-toggle="${esc(s.name)}" data-kind="${esc(s.kind)}"><i></i></label>
+          <span class="card-sub">${s.enabled ? 'Enabled' : 'Disabled'}</span><span style="flex:1"></span>
+          <button class="btn sm" data-edit="${esc(s.name)}" data-kind="${esc(s.kind)}">${ico('edit', 'sm')}Edit</button>
+          <button class="btn sm icon danger" data-delsite="${esc(s.name)}" data-kind="${esc(s.kind)}" title="Delete">${ico('trash', 'sm')}</button></div></div>`).join('')
+        || '<div class="empty">No websites configured</div>';
     };
     const act = async (body, msg) => {
       try { const r = await api('/api/sites/action', { body }); toast(msg || (r.output || 'OK').trim()); return true; }
@@ -246,16 +246,16 @@ const appTabs = {
     };
     load().catch(toastErr);
     $('#ngTest').onclick = () => act({ op: 'test' });
-    $('#ngReload').onclick = () => act({ op: 'reload' }, 'Đã reload nginx');
+    $('#ngReload').onclick = () => act({ op: 'reload' }, 'Reloaded Nginx');
     $('#ngNew').onclick = () => {
       const m = openModal({
-        title: 'Website mới', body: `<form class="form" id="nsForm">
-          <label class="field"><span>Tên file cấu hình</span><input name="name" placeholder="myapp.example.com" required class="mono"></label>
-          <label class="field"><span>Tên miền (cách nhau bởi dấu cách)</span><input name="domain" placeholder="example.com www.example.com" required class="mono"></label>
-          <div class="seg" id="nsType"><button type="button" data-t="proxy" class="on">Reverse proxy (app / docker)</button><button type="button" data-t="static">Web tĩnh</button></div>
+        title: 'New Website', body: `<form class="form" id="nsForm">
+          <label class="field"><span>Config Filename</span><input name="name" placeholder="myapp.example.com" required class="mono"></label>
+          <label class="field"><span>Domains (space-separated)</span><input name="domain" placeholder="example.com www.example.com" required class="mono"></label>
+          <div class="seg" id="nsType"><button type="button" data-t="proxy" class="on">Reverse proxy (app / docker)</button><button type="button" data-t="static">Static site</button></div>
           <label class="field" id="nsUp"><span>Upstream</span><input name="upstream" value="http://127.0.0.1:3000" class="mono"></label>
-          <label class="field hidden" id="nsRoot"><span>Thư mục web</span><input name="root" value="/var/www/html" class="mono"></label>
-        </form>`, foot: `<button class="btn" data-close>Huỷ</button><button class="btn primary" id="nsOk">Tạo & bật</button>`,
+          <label class="field hidden" id="nsRoot"><span>Web Root</span><input name="root" value="/var/www/html" class="mono"></label>
+        </form>`, foot: `<button class="btn" data-close>Cancel</button><button class="btn primary" id="nsOk">Create &amp; Enable</button>`,
       });
       let type = 'proxy';
       $('#nsType', m).onclick = e => {
@@ -265,7 +265,7 @@ const appTabs = {
       };
       $('#nsOk', m).onclick = async () => {
         const f = $('#nsForm', m);
-        if (await act({ op: 'create', template: type, name: f.name.value.trim(), domain: f.domain.value.trim(), upstream: f.upstream.value.trim(), root: f.root.value.trim() }, 'Đã tạo website')) m.close();
+        if (await act({ op: 'create', template: type, name: f.name.value.trim(), domain: f.domain.value.trim(), upstream: f.upstream.value.trim(), root: f.root.value.trim() }, 'Website created')) m.close();
       };
       $('input', m).focus();
     };
@@ -276,27 +276,27 @@ const appTabs = {
         const r = await api(`/api/sites/file?kind=${encodeURIComponent(kind)}&name=${encodeURIComponent(name)}`).catch(toastErr);
         if (!r) return;
         const m = openModal({ title: esc(r.path), size: 'lg', flush: true, body: '<div style="flex:1;display:flex;min-height:0" id="ed"></div>',
-          foot: `<span class="card-sub" style="margin-right:auto">Lưu sẽ tự chạy <span class="mono">nginx -t</span>; lỗi sẽ tự khôi phục bản cũ.</span><button class="btn" data-close>Đóng</button><button class="btn primary" id="edSave">${ico('save', 'sm')}Lưu & reload</button>` });
+          foot: `<span class="card-sub" style="margin-right:auto">Saving runs <span class="mono">nginx -t</span>; invalid configs are rolled back automatically.</span><button class="btn" data-close>Close</button><button class="btn primary" id="edSave">${ico('save', 'sm')}Save &amp; Reload</button>` });
         const save = async val => { if (await act({ op: 'save', kind, name, content: val })) m.close(); };
         const ce = codeEditor($('#ed', m), r.content, { onSave: save });
         $('#edSave', m).onclick = () => save(ce.value);
         ce.focus();
       } else if (del) {
-        if (await confirmBox(`Xoá website <b class="mono">${esc(del.dataset.delsite)}</b>? (bản sao lưu được giữ trong thư mục dữ liệu TNS)`, { ok: 'Xoá', danger: true }))
-          act({ op: 'delete', name: del.dataset.delsite, kind: del.dataset.kind }, 'Đã xoá');
+        if (await confirmBox(`Delete website <b class="mono">${esc(del.dataset.delsite)}</b>? (A backup is kept in the data directory)`, { ok: 'Delete', danger: true }))
+          act({ op: 'delete', name: del.dataset.delsite, kind: del.dataset.kind }, 'Website deleted');
       }
     };
     el.onchange = e => {
       const t = e.target.closest('[data-toggle]'); if (!t) return;
-      act({ op: t.checked ? 'enable' : 'disable', name: t.dataset.toggle, kind: t.dataset.kind }, t.checked ? 'Đã bật site' : 'Đã tắt site');
+      act({ op: t.checked ? 'enable' : 'disable', name: t.dataset.toggle, kind: t.dataset.kind }, t.checked ? 'Site enabled' : 'Site disabled');
     };
   },
 
   services(el) {
     el.innerHTML = `<div id="svNote"></div><div class="card"><div class="card-h"><span class="card-t">systemd</span><span class="card-sub" id="svSum"></span><span class="sp"></span>
-      <div class="search">${ico('search')}<input id="svQ" placeholder="Tìm dịch vụ…" style="width:200px"></div>
-      <div class="seg" id="svSeg"><button data-f="all" class="on">Tất cả</button><button data-f="active">Đang chạy</button><button data-f="failed">Lỗi</button><button data-f="inactive">Đã dừng</button></div></div>
-      <div class="tbl-wrap" style="max-height:calc(100vh - 290px)"><table class="tbl"><thead><tr><th></th><th>Dịch vụ</th><th>Trạng thái</th><th>Khởi động cùng máy</th><th></th></tr></thead><tbody id="svBody"></tbody></table></div></div>`;
+      <div class="search">${ico('search')}<input id="svQ" placeholder="Search services…" style="width:200px"></div>
+      <div class="seg" id="svSeg"><button data-f="all" class="on">All</button><button data-f="active">Active</button><button data-f="failed">Failed</button><button data-f="inactive">Inactive</button></div></div>
+      <div class="tbl-wrap" style="max-height:calc(100vh - 290px)"><table class="tbl"><thead><tr><th></th><th>Service</th><th>Status</th><th>Boot Autostart</th><th></th></tr></thead><tbody id="svBody"></tbody></table></div></div>`;
     let list = [], f = 'all', q = '';
     const render = () => {
       const rows = list.filter(s => (f === 'all' || s.active === f) && (!q || (s.unit + ' ' + s.desc).toLowerCase().includes(q)));
@@ -308,17 +308,17 @@ const appTabs = {
         <td><span class="badge ${s.active === 'active' ? 'ok' : s.active === 'failed' ? 'bad' : ''}">${esc(s.active)} · ${esc(s.sub)}</span></td>
         <td>${canToggle ? `<label class="switch"><input type="checkbox" data-en="${esc(s.unit)}" ${s.enabled === 'enabled' ? 'checked' : ''}><i></i></label>` : `<span class="dim mono" style="font-size:12px">${esc(s.enabled || '—')}</span>`}</td>
         <td><div class="acts">
-          ${on ? `<button class="btn sm icon" data-op="stop" data-u="${esc(s.unit)}" title="Dừng">${ico('stop', 'sm')}</button>` : `<button class="btn sm icon" data-op="start" data-u="${esc(s.unit)}" title="Khởi động">${ico('play', 'sm')}</button>`}
-          <button class="btn sm icon" data-op="restart" data-u="${esc(s.unit)}" title="Khởi động lại">${ico('restart', 'sm')}</button>
-          <button class="btn sm icon" data-op="logs" data-u="${esc(s.unit)}" title="Log">${ico('log', 'sm')}</button></div></td></tr>`;
-      }).join('') || `<tr><td colspan="5" class="empty">Không có dịch vụ phù hợp</td></tr>`;
+          ${on ? `<button class="btn sm icon" data-op="stop" data-u="${esc(s.unit)}" title="Stop">${ico('stop', 'sm')}</button>` : `<button class="btn sm icon" data-op="start" data-u="${esc(s.unit)}" title="Start">${ico('play', 'sm')}</button>`}
+          <button class="btn sm icon" data-op="restart" data-u="${esc(s.unit)}" title="Restart">${ico('restart', 'sm')}</button>
+          <button class="btn sm icon" data-op="logs" data-u="${esc(s.unit)}" title="Logs">${ico('log', 'sm')}</button></div></td></tr>`;
+      }).join('') || `<tr><td colspan="5" class="empty">No matching services</td></tr>`;
     };
     const load = async () => {
       const d = await api('/api/services');
       if (!d.available) { $('#svNote').innerHTML = `<div class="note info">${esc(d.note)}</div>`; return; }
-      $('#svNote').innerHTML = d.demo ? '<div class="note">Chế độ demo — trên Linux sẽ điều khiển systemd thật.</div>' : '';
+      $('#svNote').innerHTML = d.demo ? '<div class="note">Demo mode — controls real systemd units on Linux.</div>' : '';
       list = d.services;
-      $('#svSum').textContent = `${list.filter(s => s.active === 'active').length} chạy · ${list.filter(s => s.active === 'failed').length} lỗi · ${list.length} tổng`;
+      $('#svSum').textContent = `${list.filter(s => s.active === 'active').length} active · ${list.filter(s => s.active === 'failed').length} failed · ${list.length} total`;
       render();
     };
     every(10000, load);
@@ -331,25 +331,25 @@ const appTabs = {
     $('#svBody').onclick = async e => {
       const b = e.target.closest('[data-op]'); if (!b) return;
       const { op, u } = b.dataset;
-      if (op === 'logs') return logModal('Log · ' + u, async () => { const r = await api('/api/services/logs?unit=' + encodeURIComponent(u)); return (r.status ? r.status + '\n' : '') + r.logs; });
-      if (op === 'stop' && /^(ssh|sshd|tns)\.service$/.test(u) && !await confirmBox(`Dừng <b>${esc(u)}</b> có thể làm mất kết nối tới máy chủ. Tiếp tục?`, { ok: 'Vẫn dừng', danger: true })) return;
+      if (op === 'logs') return logModal('Logs · ' + u, async () => { const r = await api('/api/services/logs?unit=' + encodeURIComponent(u)); return (r.status ? r.status + '\n' : '') + r.logs; });
+      if (op === 'stop' && /^(ssh|sshd|tns)\.service$/.test(u) && !await confirmBox(`Stopping <b>${esc(u)}</b> may disconnect your access to this server. Continue?`, { ok: 'Stop anyway', danger: true })) return;
       b.disabled = true; act(u, op);
     };
     $('#svBody').onchange = e => { const t = e.target.closest('[data-en]'); if (t) act(t.dataset.en, t.checked ? 'enable' : 'disable'); };
   },
 
   ports(el) {
-    el.innerHTML = `<div class="card"><div class="card-h"><span class="card-t">Cổng đang lắng nghe</span><span class="card-sub" id="ptSum"></span></div>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Giao thức</th><th>Địa chỉ</th><th class="num">Cổng</th><th>Tiến trình</th><th class="num">PID</th><th>Phạm vi</th></tr></thead><tbody id="ptBody"></tbody></table></div></div>`;
+    el.innerHTML = `<div class="card"><div class="card-h"><span class="card-t">Listening Ports</span><span class="card-sub" id="ptSum"></span></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Protocol</th><th>Address</th><th class="num">Port</th><th>Process</th><th class="num">PID</th><th>Scope</th></tr></thead><tbody id="ptBody"></tbody></table></div></div>`;
     every(10000, async () => {
       const d = await api('/api/sys/ports');
       const ps = d.ports || [];
-      $('#ptSum').textContent = ps.length + ' socket';
+      $('#ptSum').textContent = ps.length + ' sockets';
       $('#ptBody').innerHTML = ps.map(p => {
         const local = /^(127\.|::1$|localhost)/.test(p.addr);
         return `<tr><td><span class="badge">${p.proto.toUpperCase()}</span></td><td class="mono">${esc(p.addr)}</td><td class="num" style="color:var(--accent)">${p.port}</td>
         <td>${esc(p.name || '—')}</td><td class="num dim">${p.pid || '—'}</td><td>${local ? '<span class="badge">local</span>' : '<span class="badge warn">public</span>'}</td></tr>`;
-      }).join('') || `<tr><td colspan="6" class="empty">Không có dữ liệu (có thể cần quyền root)</td></tr>`;
+      }).join('') || `<tr><td colspan="6" class="empty">No data (root privileges may be required)</td></tr>`;
     });
   },
 };
@@ -371,29 +371,29 @@ function kindOf(name) {
 }
 const kindIcon = { img: 'img', video: 'film', audio: 'music', pdf: 'pdf', zip: 'zip', code: 'code', file: 'file' };
 const joinPath = (d, n) => (d.endsWith('/') ? d : d + '/') + n;
-const rawURL = (p, dl) => '/api/files/raw?path=' + encodeURIComponent(p) + (dl ? '&dl=1' : '');
+const rawURL = (p, dl) => '/api/files/raw?path=' + encodeURIComponent(p) + (dl ? '&dl=1' : '') + (S.node && S.node !== 'local' ? '&node=' + encodeURIComponent(S.node) : '');
 
 pages.files = {
-  title: 'Tệp tin', sub: 'Duyệt, xem và chỉnh sửa tệp trên máy chủ',
+  title: 'Files', sub: 'Browse, preview, and edit files on the server',
   mount(v) {
     let path = LS.get('filesPath', ''), entries = [], showHidden = LS.get('showHidden', false), sel = new Set(), editingPath = false;
     v.innerHTML = `<div class="card" id="fCard" style="padding-bottom:0">
       <div class="fbar">
-        <button class="btn icon" id="fUp" title="Thư mục cha">${ico('parent')}</button>
-        <button class="btn icon" id="fHome" title="Thư mục home">${ico('home')}</button>
-        <button class="btn icon" id="fRefresh" title="Làm mới">${ico('refresh')}</button>
+        <button class="btn icon" id="fUp" title="Parent directory">${ico('parent')}</button>
+        <button class="btn icon" id="fHome" title="Home directory">${ico('home')}</button>
+        <button class="btn icon" id="fRefresh" title="Refresh">${ico('refresh')}</button>
         <div class="crumbs" id="crumbs"></div>
-        <button class="btn" id="fMkdir">${ico('plus', 'sm')}Thư mục</button>
-        <button class="btn" id="fTouch">${ico('file', 'sm')}Tệp mới</button>
-        <button class="btn" id="fUpload">${ico('up', 'sm')}Tải lên</button>
-        <button class="btn icon" id="fTerm" title="Mở terminal tại đây">${ico('term')}</button>
-        <button class="btn ${showHidden ? 'on' : ''}" id="fHidden" title="Hiện tệp ẩn">.*</button>
+        <button class="btn" id="fMkdir">${ico('plus', 'sm')}Folder</button>
+        <button class="btn" id="fTouch">${ico('file', 'sm')}New File</button>
+        <button class="btn" id="fUpload">${ico('up', 'sm')}Upload</button>
+        <button class="btn icon" id="fTerm" title="Open terminal here">${ico('term')}</button>
+        <button class="btn ${showHidden ? 'on' : ''}" id="fHidden" title="Show hidden files">.*</button>
         <input type="file" id="fFile" multiple class="hidden">
       </div>
       <div class="row hidden" id="fSel" style="padding:8px 20px;margin:0 -20px;border-top:1px solid var(--line);background:var(--accent-soft)">
-        <span id="fSelN"></span><span style="flex:1"></span><button class="btn sm" id="fSelClear">Bỏ chọn</button><button class="btn sm danger" id="fSelDel">${ico('trash', 'sm')}Xoá</button></div>
+        <span id="fSelN"></span><span style="flex:1"></span><button class="btn sm" id="fSelClear">Clear selection</button><button class="btn sm danger" id="fSelDel">${ico('trash', 'sm')}Delete</button></div>
       <div class="tbl-wrap" style="max-height:calc(100vh - 230px);position:relative;margin-bottom:0" id="fWrap">
-        <table class="tbl ftbl"><thead><tr><th><input type="checkbox" id="fAll"></th><th>Tên</th><th class="num">Kích thước</th><th>Sửa đổi</th><th>Quyền</th><th>Chủ</th><th></th></tr></thead><tbody id="fBody"></tbody></table></div>
+        <table class="tbl ftbl"><thead><tr><th><input type="checkbox" id="fAll"></th><th>Name</th><th class="num">Size</th><th>Modified</th><th>Permissions</th><th>Owner</th><th></th></tr></thead><tbody id="fBody"></tbody></table></div>
       <div id="fStatus" class="card-sub mono" style="padding:10px 20px;border-top:1px solid var(--line);margin:0 -20px"></div></div>`;
 
     const crumbs = () => {
@@ -405,13 +405,13 @@ pages.files = {
     };
     const updSel = () => {
       $('#fSel').classList.toggle('hidden', !sel.size);
-      $('#fSelN').textContent = `${sel.size} mục đã chọn`;
+      $('#fSelN').textContent = `${sel.size} selected`;
       $$('#fBody tr[data-n]').forEach(tr => { const on = sel.has(tr.dataset.n); tr.classList.toggle('sel', on); $('input', tr).checked = on; });
     };
     const render = () => {
       const list = entries.filter(e => showHidden || !e.name.startsWith('.'));
       const totalSize = list.filter(e => !e.dir).reduce((s, e) => s + e.size, 0);
-      $('#fStatus').textContent = `${list.filter(e => e.dir).length} thư mục · ${list.filter(e => !e.dir).length} tệp · ${fmtBytes(totalSize)}`;
+      $('#fStatus').textContent = `${list.filter(e => e.dir).length} folders · ${list.filter(e => !e.dir).length} files · ${fmtBytes(totalSize)}`;
       $('#fBody').innerHTML = list.map(e => {
         const k = e.dir ? 'dir' : kindOf(e.name);
         return `<tr data-n="${esc(e.name)}" data-dir="${e.dir ? 1 : 0}"><td><input type="checkbox"></td>
@@ -420,10 +420,10 @@ pages.files = {
         <td class="dim mono" style="font-size:12px;white-space:nowrap">${fmtDT(e.mtime * 1000)}</td>
         <td class="mono dim" style="font-size:12px">${esc(e.mode)}</td><td class="dim">${esc(e.owner || '')}</td>
         <td><div class="acts">
-          <a class="btn sm icon ghost" href="${rawURL(joinPath(path, e.name), true)}" title="${e.dir ? 'Tải về (zip)' : 'Tải về'}">${ico('down', 'sm')}</a>
-          <button class="btn sm icon ghost" data-ren title="Đổi tên">${ico('edit', 'sm')}</button>
-          <button class="btn sm icon ghost" data-del title="Xoá">${ico('trash', 'sm')}</button></div></td></tr>`;
-      }).join('') || `<tr><td colspan="7" class="empty">Thư mục trống — kéo thả tệp vào đây để tải lên</td></tr>`;
+          <a class="btn sm icon ghost" href="${rawURL(joinPath(path, e.name), true)}" title="${e.dir ? 'Download (zip)' : 'Download'}">${ico('down', 'sm')}</a>
+          <button class="btn sm icon ghost" data-ren title="Rename">${ico('edit', 'sm')}</button>
+          <button class="btn sm icon ghost" data-del title="Delete">${ico('trash', 'sm')}</button></div></td></tr>`;
+      }).join('') || `<tr><td colspan="7" class="empty">Empty folder — drag &amp; drop files here to upload</td></tr>`;
       updSel();
     };
     const go = async p => {
@@ -460,18 +460,18 @@ pages.files = {
     $('#fHidden').onclick = e => { showHidden = !showHidden; LS.set('showHidden', showHidden); e.currentTarget.classList.toggle('on', showHidden); render(); };
     $('#fTerm').onclick = () => Term.open({ cwd: path, title: path.split('/').pop() || '/' });
     $('#fMkdir').onclick = async () => {
-      const n = await promptBox('Thư mục mới', 'Tên thư mục'); if (!n) return;
+      const n = await promptBox('New Folder', 'Folder name'); if (!n) return;
       try { await api('/api/files/op', { body: { op: 'mkdir', path: joinPath(path, n) } }); reload(); } catch (e) { toastErr(e); }
     };
     $('#fTouch').onclick = async () => {
-      const n = await promptBox('Tệp mới', 'Tên tệp'); if (!n) return;
+      const n = await promptBox('New File', 'Filename'); if (!n) return;
       try { await api('/api/files/op', { body: { op: 'touch', path: joinPath(path, n) } }); await reload(); openFile(joinPath(path, n), n, 0); } catch (e) { toastErr(e); }
     };
     $('#fAll').onchange = e => { sel = new Set(e.target.checked ? entries.filter(x => showHidden || !x.name.startsWith('.')).map(x => x.name) : []); updSel(); };
     $('#fSelClear').onclick = () => { sel.clear(); $('#fAll').checked = false; updSel(); };
     $('#fSelDel').onclick = async () => {
-      if (!await confirmBox(`Xoá vĩnh viễn ${sel.size} mục?\n${[...sel].slice(0, 8).map(esc).join('\n')}${sel.size > 8 ? '\n…' : ''}`, { ok: 'Xoá', danger: true })) return;
-      try { await api('/api/files/op', { body: { op: 'delete', paths: [...sel].map(n => joinPath(path, n)) } }); toast('Đã xoá'); } catch (e) { toastErr(e); }
+      if (!await confirmBox(`Permanently delete ${sel.size} items?\n${[...sel].slice(0, 8).map(esc).join('\n')}${sel.size > 8 ? '\n…' : ''}`, { ok: 'Delete', danger: true })) return;
+      try { await api('/api/files/op', { body: { op: 'delete', paths: [...sel].map(n => joinPath(path, n)) } }); toast('Deleted'); } catch (e) { toastErr(e); }
       $('#fAll').checked = false; reload();
     };
 
@@ -481,13 +481,13 @@ pages.files = {
       if (e.target.matches('input[type=checkbox]')) { e.target.checked ? sel.add(name) : sel.delete(name); updSel(); return; }
       if (e.target.closest('[data-open]')) { isDir ? go(full) : openFile(full, name, (entries.find(x => x.name === name) || {}).size); return; }
       if (e.target.closest('[data-ren]')) {
-        const n = await promptBox('Đổi tên', 'Tên mới', name); if (!n || n === name) return;
+        const n = await promptBox('Rename', 'New name', name); if (!n || n === name) return;
         try { await api('/api/files/op', { body: { op: 'rename', path: full, to: n.startsWith('/') ? n : joinPath(path, n) } }); reload(); } catch (ex) { toastErr(ex); }
         return;
       }
       if (e.target.closest('[data-del]')) {
-        if (!await confirmBox(`Xoá vĩnh viễn <b class="mono">${esc(name)}</b>${isDir ? ' và toàn bộ nội dung bên trong' : ''}?`, { ok: 'Xoá', danger: true })) return;
-        try { await api('/api/files/op', { body: { op: 'delete', paths: [full] } }); toast('Đã xoá ' + name); reload(); } catch (ex) { toastErr(ex); }
+        if (!await confirmBox(`Permanently delete <b class="mono">${esc(name)}</b>${isDir ? ' and all its contents' : ''}?`, { ok: 'Delete', danger: true })) return;
+        try { await api('/api/files/op', { body: { op: 'delete', paths: [full] } }); toast('Deleted ' + name); reload(); } catch (ex) { toastErr(ex); }
       }
     };
     $('#fBody').ondblclick = e => { const tr = e.target.closest('tr[data-n]'); if (tr && !e.target.closest('button,a,input')) $('[data-open]', tr).click(); };
@@ -504,21 +504,22 @@ pages.files = {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/files/upload?dir=' + encodeURIComponent(path));
       xhr.setRequestHeader('X-TNS', '1');
-      xhr.upload.onprogress = ev => { t.innerHTML = `${ico('up')}<div>Đang tải lên ${files.length} tệp… ${Math.round(ev.loaded / (ev.total || total) * 100)}%</div>`; };
+      if (S.node && S.node !== 'local') xhr.setRequestHeader('X-TNS-Node', S.node);
+      xhr.upload.onprogress = ev => { t.innerHTML = `${ico('up')}<div>Uploading ${files.length} file(s)… ${Math.round(ev.loaded / (ev.total || total) * 100)}%</div>`; };
       xhr.onload = () => {
         t.remove();
-        if (xhr.status === 200) toast(`Đã tải lên ${files.length} tệp (${fmtBytes(total)})`);
+        if (xhr.status === 200) toast(`Uploaded ${files.length} file(s) (${fmtBytes(total)})`);
         else { let m = xhr.statusText; try { m = JSON.parse(xhr.responseText).error; } catch (e) { } toast(m, 'err'); }
         reload();
       };
-      xhr.onerror = () => { t.remove(); toast('Tải lên thất bại', 'err'); };
+      xhr.onerror = () => { t.remove(); toast('Upload failed', 'err'); };
       xhr.send(fd);
     };
     $('#fUpload').onclick = () => $('#fFile').click();
     $('#fFile').onchange = e => { upload([...e.target.files]); e.target.value = ''; };
     const wrap = $('#fWrap');
     let hint = null, depth = 0;
-    wrap.addEventListener('dragenter', e => { if (![...e.dataTransfer.types].includes('Files')) return; e.preventDefault(); depth++; if (!hint) { hint = document.createElement('div'); hint.className = 'drop-hint'; hint.textContent = 'Thả để tải lên ' + path; wrap.appendChild(hint); } });
+    wrap.addEventListener('dragenter', e => { if (![...e.dataTransfer.types].includes('Files')) return; e.preventDefault(); depth++; if (!hint) { hint = document.createElement('div'); hint.className = 'drop-hint'; hint.textContent = 'Drop to upload into ' + path; wrap.appendChild(hint); } });
     wrap.addEventListener('dragover', e => e.preventDefault());
     wrap.addEventListener('dragleave', () => { if (--depth <= 0 && hint) { hint.remove(); hint = null; depth = 0; } });
     wrap.addEventListener('drop', e => { e.preventDefault(); depth = 0; if (hint) { hint.remove(); hint = null; } upload([...e.dataTransfer.files]); });
@@ -527,7 +528,7 @@ pages.files = {
 
 async function openFile(full, name, size) {
   const k = kindOf(name);
-  const dl = `<a class="btn sm" href="${rawURL(full, true)}">${ico('down', 'sm')}Tải về</a>`;
+  const dl = `<a class="btn sm" href="${rawURL(full, true)}">${ico('down', 'sm')}Download</a>`;
   if (k === 'img' || k === 'video' || k === 'audio' || k === 'pdf') {
     const src = rawURL(full);
     const inner = k === 'img' ? `<img src="${src}" alt="">` : k === 'video' ? `<video src="${src}" controls autoplay></video>`
@@ -537,23 +538,23 @@ async function openFile(full, name, size) {
     return;
   }
   if (k === 'zip') {
-    const m = openModal({ title: esc(name), body: `<div class="empty">${ico(kindIcon[k])}<br>Không xem trước được loại tệp này (${fmtBytes(size)}).</div>`, foot: dl });
+    const m = openModal({ title: esc(name), body: `<div class="empty">${ico(kindIcon[k])}<br>Preview is not supported for this archive (${fmtBytes(size)}).</div>`, foot: dl });
     return m;
   }
   let r;
   try { r = await api('/api/files/text?path=' + encodeURIComponent(full)); } catch (e) { return toastErr(e); }
   if (r.binary) {
-    openModal({ title: esc(name), body: `<div class="empty">${ico('file')}<br>Tệp nhị phân (${fmtBytes(r.size)}) — không hiển thị dạng văn bản.</div>`, foot: dl });
+    openModal({ title: esc(name), body: `<div class="empty">${ico('file')}<br>Binary file (${fmtBytes(r.size)}) — cannot be displayed as text.</div>`, foot: dl });
     return;
   }
   const ro = r.truncated;
   const m = openModal({
     title: esc(full), size: 'lg', flush: true, body: '<div style="flex:1;display:flex;min-height:0" id="ed"></div>',
-    foot: `<span class="card-sub" style="margin-right:auto">${ro ? 'Tệp lớn hơn 5MB — chỉ xem 5MB đầu, không thể lưu.' : 'Ctrl/⌘ + S để lưu'}</span>${dl}<button class="btn" data-close>Đóng</button>${ro ? '' : `<button class="btn primary" id="edSave">${ico('save', 'sm')}Lưu</button>`}`,
+    foot: `<span class="card-sub" style="margin-right:auto">${ro ? 'File exceeds 5MB — viewing first 5MB read-only.' : 'Ctrl/⌘ + S to save'}</span>${dl}<button class="btn" data-close>Close</button>${ro ? '' : `<button class="btn primary" id="edSave">${ico('save', 'sm')}Save</button>`}`,
   });
   $('.mh-extra', m).innerHTML = `<span class="card-sub mono">${fmtBytes(r.size)}</span>`;
   const save = async val => {
-    try { await api('/api/files/save', { body: { path: full, content: val } }); toast('Đã lưu ' + name); } catch (e) { toastErr(e); }
+    try { await api('/api/files/save', { body: { path: full, content: val } }); toast('Saved ' + name); } catch (e) { toastErr(e); }
   };
   const ce = codeEditor($('#ed', m), r.content, { readOnly: ro, onSave: ro ? null : save });
   if (!ro) $('#edSave', m).onclick = () => save(ce.value);
@@ -587,14 +588,15 @@ const Term = {
     r.className = 'term-page';
     r.innerHTML = `<div class="card term-shell">
       <div class="term-tabs"><div id="tTabs" style="display:flex;gap:2px"></div>
-        <button class="btn sm ghost icon" id="tNew" title="Phiên mới">${ico('plus', 'sm')}</button>
+        <button class="btn sm ghost icon" id="tNew" title="New session on selected server">${ico('plus', 'sm')}</button>
         <div class="term-tools">
-          <button class="btn sm ghost" id="tFontDn" title="Thu nhỏ chữ">A−</button><button class="btn sm ghost" id="tFontUp" title="Phóng to chữ">A+</button>
-          <button class="btn sm ghost icon" id="tClear" title="Xoá màn hình">${ico('trash', 'sm')}</button>
-          <button class="btn sm ghost icon" id="tFull" title="Toàn màn hình">${ico('max', 'sm')}</button></div></div>
+          <select id="tNodeSel" style="height:26px;font-size:12px;background:#102238;color:#e8f1fb;border-color:#2c4a6e" title="Select server for new shell"></select>
+          <button class="btn sm ghost" id="tFontDn" title="Decrease font size">A−</button><button class="btn sm ghost" id="tFontUp" title="Increase font size">A+</button>
+          <button class="btn sm ghost icon" id="tClear" title="Clear terminal">${ico('trash', 'sm')}</button>
+          <button class="btn sm ghost icon" id="tFull" title="Toggle fullscreen">${ico('max', 'sm')}</button></div></div>
       <div class="term-body" id="tBody"></div>
-      <div class="term-status"><span id="tConn"><i class="dot"></i> —</span><span id="tSize"></span><span style="flex:1"></span><span>${esc(S.host)}</span></div></div>`;
-    $('#tNew', r).onclick = () => this.add({});
+      <div class="term-status"><span id="tConn"><i class="dot"></i> —</span><span id="tSize"></span><span style="flex:1"></span><span id="tHost">${esc(S.host)}</span></div></div>`;
+    $('#tNew', r).onclick = () => this.add({ node: $('#tNodeSel', r).value || S.node });
     $('#tFontDn', r).onclick = () => this.font(-1);
     $('#tFontUp', r).onclick = () => this.font(1);
     $('#tClear', r).onclick = () => this.active && this.active.term.clear();
@@ -616,8 +618,20 @@ const Term = {
     this.fit();
   },
 
-  add({ container, cwd, title }) {
+  syncNodeSelect() {
+    if (!this.root) return;
+    const sel = $('#tNodeSel', this.root);
+    if (!sel) return;
+    const list = S.nodes.length ? S.nodes : [{ id: 'local', name: S.host }];
+    sel.innerHTML = list.map(n => `<option value="${esc(n.id)}">${esc(n.name)}${n.local ? ' (Hub)' : ' (Private)'}</option>`).join('');
+    sel.value = S.node || 'local';
+  },
+
+  add({ container, cwd, title, node }) {
     const id = ++this.seq;
+    const targetNode = node || S.node || 'local';
+    const nodeObj = S.nodes.find(n => n.id === targetNode);
+    const nodeName = nodeObj ? nodeObj.name : (targetNode === 'local' ? S.host : targetNode);
     const pane = document.createElement('div');
     pane.className = 'term-pane';
     $('#tBody', this.root).appendChild(pane);
@@ -628,8 +642,9 @@ const Term = {
     const fit = new window.FitAddon.FitAddon();
     term.loadAddon(fit);
     term.open(pane);
-    const s = { id, term, fit, pane, title: title || (container ? 'docker' : 'shell') + ' ' + id, container, cwd, ws: null, alive: false };
-    if (container) s.title = '⧉ ' + (title || container);
+    const baseTitle = title || (container ? 'docker' : 'shell') + ' ' + id;
+    const s = { id, term, fit, pane, node: targetNode, nodeName, title: (S.nodes.length > 1 ? nodeName + ' · ' : '') + baseTitle, container, cwd, ws: null, alive: false };
+    if (container) s.title = '⧉ ' + (S.nodes.length > 1 ? nodeName + ' · ' : '') + (title || container);
     this.sessions.push(s);
     const enc = new TextEncoder();
     term.onData(d => {
@@ -644,6 +659,7 @@ const Term = {
 
   connect(s) {
     const q = new URLSearchParams();
+    if (s.node && s.node !== 'local') q.set('node', s.node);
     if (s.container) q.set('container', s.container);
     if (s.cwd) q.set('cwd', s.cwd);
     const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/term?${q}`);
@@ -660,8 +676,8 @@ const Term = {
       s.term.write(new Uint8Array(ev.data));
     };
     ws.onclose = () => {
-      if (s.alive) s.term.write('\r\n\x1b[38;2;112;136;168m── phiên đã kết thúc · nhấn Enter để kết nối lại ──\x1b[0m\r\n');
-      else s.term.write('\r\n\x1b[31mKhông kết nối được. Nhấn Enter để thử lại.\x1b[0m\r\n');
+      if (s.alive) s.term.write('\r\n\x1b[38;2;112;136;168m── session ended · press Enter to reconnect ──\x1b[0m\r\n');
+      else s.term.write('\r\n\x1b[31mConnection failed. Press Enter to retry.\x1b[0m\r\n');
       s.alive = false;
       this.status();
     };
@@ -690,7 +706,7 @@ const Term = {
 
   tabs() {
     $('#tTabs', this.root).innerHTML = this.sessions.map(s => `<button class="term-tab ${s === this.active ? 'on' : ''}" data-id="${s.id}">
-      <i class="dot ${s.alive ? 'ok' : ''}"></i>${esc(s.title)}<span class="x" data-id="${s.id}" title="Đóng">${ico('x', 'sm')}</span></button>`).join('');
+      <i class="dot ${s.alive ? 'ok' : ''}"></i>${esc(s.title)}<span class="x" data-id="${s.id}" title="Close">${ico('x', 'sm')}</span></button>`).join('');
   },
 
   status() {
@@ -698,8 +714,10 @@ const Term = {
     const s = this.active;
     this.tabs();
     if (!s) return;
-    $('#tConn', this.root).innerHTML = s.alive ? '<i class="dot ok"></i> đã kết nối' : '<i class="dot bad"></i> mất kết nối';
+    $('#tConn', this.root).innerHTML = s.alive ? '<i class="dot ok"></i> connected' : '<i class="dot bad"></i> disconnected';
     $('#tSize', this.root).textContent = `${s.term.cols}×${s.term.rows}`;
+    const th = $('#tHost', this.root);
+    if (th) th.textContent = s.nodeName || S.host;
   },
 
   fit() {
@@ -714,22 +732,23 @@ const Term = {
 };
 
 pages.terminal = {
-  title: 'Terminal', sub: 'Phiên shell trực tiếp trên máy chủ', fullBleed: true,
+  title: 'Terminal', sub: 'Interactive root shell session on the server', fullBleed: true,
   mount(v) {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'height:100%;padding:14px 16px 16px';
     v.appendChild(wrap);
-    wrap.innerHTML = '<div class="empty">Đang tải terminal…</div>';
+    wrap.innerHTML = '<div class="empty">Loading terminal…</div>';
     let alive = true;
     Term.ensureLib().then(() => {
       if (!alive) return;
       if (!Term.root) Term.build();
+      Term.syncNodeSelect();
       wrap.innerHTML = '';
       wrap.appendChild(Term.root);
       if (Term.pending.length) Term.flush();
-      else if (!Term.sessions.length) Term.add({});
+      else if (!Term.sessions.length) Term.add({ node: S.node });
       else Term.focus(Term.active.id);
-    }).catch(() => { wrap.innerHTML = '<div class="empty">Không tải được xterm.js</div>'; });
+    }).catch(() => { wrap.innerHTML = '<div class="empty">Failed to load xterm.js</div>'; });
     // keep sessions alive when navigating away: just detach the DOM
     return () => { alive = false; if (Term.root) { Term.root.classList.remove('full'); Term.root.remove(); } };
   },
@@ -737,34 +756,103 @@ pages.terminal = {
 
 // ================= settings =================
 pages.settings = {
-  title: 'Cài đặt', sub: 'Bảo mật bảng điều khiển',
+  title: 'Settings', sub: 'Console security, passkeys, and system information',
   mount(v) {
     v.innerHTML = `<div class="grid g2" style="max-width:1100px">
-      <div class="card"><div class="card-h"><span class="card-t">Đổi mật khẩu</span></div>
+      <div class="card">
+        <div class="card-h"><span class="card-t">${ico('key', 'sm')} Passkeys (WebAuthn)</span><span class="sp"></span>
+          <button class="btn sm primary" id="pkAddBtn">${ico('plus', 'sm')}Add Passkey</button></div>
+        <p class="card-sub" style="margin:0 0 12px">Sign in with Touch ID, Face ID, Windows Hello, iCloud Keychain, or a FIDO2 hardware key.</p>
+        <div id="pkList"><div class="empty" style="padding:16px">Loading…</div></div>
+        <div class="row mt" style="justify-content:space-between;padding-top:14px;border-top:1px solid var(--line)">
+          <div><b>Require Passkey only</b><div class="dim" style="font-size:12.5px">Disable password login on the sign-in screen</div></div>
+          <label class="switch" title="Require Passkey for sign-in"><input type="checkbox" id="pkOnlyToggle"><i></i></label>
+        </div>
+      </div>
+      <div class="card"><div class="card-h"><span class="card-t">Change Password</span></div>
         <form class="form" id="pwForm">
-          <label class="field"><span>Mật khẩu hiện tại</span><input type="password" name="cur" autocomplete="current-password" required></label>
-          <label class="field"><span>Mật khẩu mới (≥ 8 ký tự)</span><input type="password" name="n1" autocomplete="new-password" required minlength="8"></label>
-          <label class="field"><span>Nhập lại mật khẩu mới</span><input type="password" name="n2" autocomplete="new-password" required></label>
-          <button class="btn primary" type="submit">Cập nhật mật khẩu</button>
-          <p class="card-sub" style="margin:0">Đổi mật khẩu sẽ đăng xuất mọi phiên khác. Quên mật khẩu? Chạy <span class="mono">tns -reset-password</span> trên máy chủ.</p>
+          <label class="field"><span>Current password</span><input type="password" name="cur" autocomplete="current-password" required></label>
+          <label class="field"><span>New password (≥ 8 characters)</span><input type="password" name="n1" autocomplete="new-password" required minlength="8"></label>
+          <label class="field"><span>Confirm new password</span><input type="password" name="n2" autocomplete="new-password" required></label>
+          <button class="btn primary" type="submit">Update Password</button>
+          <p class="card-sub" style="margin:0">Changing your password signs out all other sessions. Forgot password or lost passkey? Run <span class="mono">tns -reset-password</span> on the server.</p>
         </form></div>
-      <div class="card"><div class="card-h"><span class="card-t">Khuyến nghị bảo mật</span></div>
+      <div class="card"><div class="card-h"><span class="card-t">Security Recommendations</span></div>
         <div class="alerts" style="max-height:none">
-          <div class="alert info">${ico('shield')}<div><b>Dùng HTTPS</b><p>Chạy với <span class="mono">-tls</span> (chứng chỉ tự ký) hoặc đặt sau Nginx + Let's Encrypt.</p></div></div>
-          <div class="alert info">${ico('ban')}<div><b>Giới hạn IP truy cập cổng 1611</b><p>Trong trang Tường lửa, chỉ cho phép IP văn phòng / VPN truy cập cổng bảng điều khiển.</p></div></div>
-          <div class="alert info">${ico('term')}<div><b>TNS chạy với quyền root</b><p>Terminal và trình duyệt tệp có toàn quyền trên máy. Chỉ chia sẻ mật khẩu cho quản trị viên.</p></div></div>
-          <div class="alert info">${ico('globe')}<div><b>Định vị IP</b><p>Vị trí IP được tra qua ip-api.com và lưu cache. Tắt bằng cờ <span class="mono">-nogeo</span>.</p></div></div>
+          <div class="alert info">${ico('shield')}<div><b>HTTPS &amp; Domain-Only Access</b><p>Served over HTTPS with automatic Let's Encrypt TLS certificates and direct IP access blocked.</p></div></div>
+          <div class="alert info">${ico('key')}<div><b>Phishing-Resistant Passkeys</b><p>Register a Passkey (Touch ID / Face ID / YubiKey) and enable Passkey-only mode to eliminate password attacks.</p></div></div>
+          <div class="alert info">${ico('term')}<div><b>Root Privileges</b><p>Terminal and File Manager run as root across managed VMs. Only share console credentials with administrators.</p></div></div>
+          <div class="alert info">${ico('globe')}<div><b>IP Geolocation</b><p>Login IP locations are resolved via ip-api.com and cached locally. Disable with <span class="mono">-nogeo</span>.</p></div></div>
         </div></div>
-      <div class="card"><div class="card-h"><span class="card-t">Thông tin</span></div><dl class="kv" id="aboutKv"></dl></div>
+      <div class="card"><div class="card-h"><span class="card-t">About</span></div><dl class="kv" id="aboutKv"></dl></div>
     </div>`;
     const i = S.info || {};
-    $('#aboutKv').innerHTML = `<dt>Phiên bản</dt><dd>TNS 1.0.0</dd><dt>Máy chủ</dt><dd>${esc(S.host)}</dd><dt>Hệ điều hành</dt><dd>${esc((i.platform || i.os || '') + ' ' + (i.platformVersion || ''))}</dd>
-      <dt>Kết nối</dt><dd>${esc(location.protocol.replace(':', '').toUpperCase())} · ${esc(location.host)}</dd><dt>Chế độ demo</dt><dd>${S.demo ? 'bật' : 'tắt'}</dd>`;
+    const cur = S.currentNode();
+    $('#aboutKv').innerHTML = `<dt>Version</dt><dd>Azure Cloud Console 1.2.0</dd><dt>Hub Server</dt><dd>${esc(S.host)}</dd><dt>Active Node</dt><dd>${esc(cur.name)} (${cur.local ? 'Hub' : 'Private Node'})</dd><dt>OS</dt><dd>${esc((i.platform || i.os || '') + ' ' + (i.platformVersion || ''))}</dd>
+      <dt>Connection</dt><dd>${esc(location.protocol.replace(':', '').toUpperCase())} · ${esc(location.host)}</dd><dt>Demo Mode</dt><dd>${S.demo ? 'enabled' : 'disabled'}</dd>`;
+
+    const loadPasskeys = async () => {
+      try {
+        const d = await api('/api/auth/passkey');
+        const list = d.passkeys || [];
+        S.hasPasskey = list.length > 0;
+        S.passkeyOnly = !!d.passkeyOnly;
+        const tog = $('#pkOnlyToggle');
+        tog.checked = !!d.passkeyOnly;
+        tog.disabled = list.length === 0;
+        $('#pkList').innerHTML = list.map(p => `<div class="pk-row">
+          ${ico('key')}
+          <div style="flex:1;min-width:0">
+            <div class="row" style="gap:6px"><b>${esc(p.name)}</b><span class="badge acc">${esc(p.alg)}</span></div>
+            <div class="dim mono" style="font-size:11.5px;margin-top:2px">Added ${fmtDT(p.createdAt)}${p.lastUsedAt && !p.lastUsedAt.startsWith('0001-') ? ' · Last used ' + fmtAgo(p.lastUsedAt) : ''}</div>
+          </div>
+          <button class="btn sm icon danger" data-del-pk="${esc(p.id)}" data-name="${esc(p.name)}" title="Remove passkey">${ico('trash', 'sm')}</button>
+        </div>`).join('') || '<div class="empty" style="padding:18px 8px">No passkeys registered yet</div>';
+      } catch (ex) { toastErr(ex); }
+    };
+    loadPasskeys();
+
+    $('#pkAddBtn').onclick = async () => {
+      if (!window.PublicKeyCredential) return toast('Passkeys are not supported in this browser or context (HTTPS required)', 'err');
+      const defName = /Mac/i.test(navigator.userAgent) ? 'MacBook Touch ID' : /iPhone|iPad/i.test(navigator.userAgent) ? 'iPhone Face ID' : /Windows/i.test(navigator.userAgent) ? 'Windows Hello' : 'Security Key';
+      const name = await promptBox('Register Passkey', 'Passkey label (e.g. MacBook Touch ID, YubiKey)', defName);
+      if (!name) return;
+      const btn = $('#pkAddBtn'); btn.disabled = true;
+      try {
+        const r = await passkeyRegister(name);
+        toast(`Registered passkey "${r.name}" (${r.alg})`);
+        loadPasskeys();
+      } catch (ex) {
+        if (ex.name !== 'NotAllowedError') toastErr(ex);
+        else toast('Passkey registration cancelled', 'err');
+      }
+      btn.disabled = false;
+    };
+
+    $('#pkList').onclick = async e => {
+      const b = e.target.closest('[data-del-pk]'); if (!b) return;
+      if (!await confirmBox(`Remove passkey <b>${esc(b.dataset.name)}</b>?`, { ok: 'Remove', danger: true })) return;
+      try { await api('/api/auth/passkey/delete', { body: { id: b.dataset.delPk } }); toast('Passkey removed'); loadPasskeys(); } catch (ex) { toastErr(ex); }
+    };
+
+    $('#pkOnlyToggle').onchange = async e => {
+      const on = e.target.checked;
+      if (on) {
+        const ok = await confirmBox('Disable password login and require a registered Passkey to sign in?\n\n(You can always recover via CLI with: tns -reset-password)', { ok: 'Enable Passkey-Only', danger: true });
+        if (!ok) { e.target.checked = false; return; }
+      }
+      try {
+        await api('/api/auth/passkey/mode', { body: { passkeyOnly: on } });
+        toast(on ? 'Passkey-only login enabled' : 'Password login re-enabled');
+        loadPasskeys();
+      } catch (ex) { e.target.checked = !on; toastErr(ex); }
+    };
+
     $('#pwForm').onsubmit = async e => {
       e.preventDefault();
       const f = e.target;
-      if (f.n1.value !== f.n2.value) return toast('Mật khẩu mới không khớp', 'err');
-      try { await api('/api/auth/password', { body: { current: f.cur.value, new: f.n1.value } }); toast('Đã đổi mật khẩu'); f.reset(); } catch (ex) { toastErr(ex); }
+      if (f.n1.value !== f.n2.value) return toast('New passwords do not match', 'err');
+      try { await api('/api/auth/password', { body: { current: f.cur.value, new: f.n1.value } }); toast('Password updated'); f.reset(); } catch (ex) { toastErr(ex); }
     };
   },
 };

@@ -292,6 +292,24 @@ func handleSysInfo(w http.ResponseWriter, r *http.Request) {
 		out["virtualization"] = hi.VirtualizationSystem
 		out["bootTime"] = hi.BootTime
 	}
+	if md := getIMDSCached(); md != nil {
+		if md.Compute.ResourceGroupName != "" {
+			out["azureRg"] = md.Compute.ResourceGroupName
+		}
+		if md.Compute.Location != "" {
+			out["azureLocation"] = md.Compute.Location
+		}
+		if md.Compute.VMSize != "" {
+			out["azureVmSize"] = md.Compute.VMSize
+		}
+		pubIP, fqdn := getLocalAzurePublicNet()
+		if pubIP != "" {
+			out["publicIp"] = pubIP
+		}
+		if fqdn != "" {
+			out["fqdn"] = fqdn
+		}
+	}
 	writeJSON(w, out)
 }
 

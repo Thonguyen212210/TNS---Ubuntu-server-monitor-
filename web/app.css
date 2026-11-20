@@ -1,67 +1,70 @@
-/* TNS Server Console — AWS-console-like tone: squid-ink header, orange primary, blue links,
-   rounded containers, pill buttons kept separate. Flat, crisp, no blur. Light + dark. */
+/* Azure Cloud Console — crisp Microsoft Azure Portal aesthetic: Azure blue primary,
+   deep navy header, clean rounded containers, light + dark themes. */
 :root {
-  --bg: #f2f3f3;
+  --bg: #f3f5f8;
   --panel: #ffffff;
-  --panel-2: #fafafa;
+  --panel-2: #f8fafc;
   --input: #ffffff;
-  --hover: #f2f8fd;
-  --line: #e9ebed;
-  --line-2: #c6c6cd;
-  --input-line: #8c8c94;
+  --hover: #eff6fc;
+  --line: #e4e8ee;
+  --line-2: #c8d1dc;
+  --input-line: #8a94a6;
   --text: #0f141a;
-  --text-2: #414d5c;
-  --muted: #5f6b7a;
-  --dim: #8c8c94;
-  --accent: #0972d3;
-  --accent-hover: #033160;
-  --accent-soft: #f2f8fd;
-  --accent-line: #89bdee;
-  --primary: #ff9900;
-  --primary-hover: #ec7211;
-  --on-primary: #0f141a;
-  --ok: #037f0c; --ok-soft: #f2fcf3; --ok-line: #6fbf73;
+  --text-2: #3b4859;
+  --muted: #5e6b7c;
+  --dim: #8a94a6;
+  --accent: #0078d4;
+  --accent-hover: #005a9e;
+  --accent-soft: #eff6fc;
+  --accent-line: #71afe5;
+  --primary: #0078d4;
+  --primary-hover: #106ebe;
+  --on-primary: #ffffff;
+  --ok: #107c10; --ok-soft: #effaf0; --ok-line: #6fbf73;
   --warn: #8d6605; --warn-soft: #fffce9; --warn-line: #e0ca57;
-  --bad: #d91515; --bad-soft: #fff7f7; --bad-line: #f5a3a3;
-  --c1: #688ae8; --c2: #c33d69; --c3: #2ea597; --okc: #29ad32; --warnc: #ff9900; --badc: #d91515;
-  --chart-grid: #e9ebed; --chart-axis: #c6c6cd;
-  --map-land: #c6cbd3; --map-grid: #f0f1f2;
-  --top-bg: #232f3e; --top-text: #ffffff; --top-muted: #d1d5db; --top-line: #414d5c; --top-hover: #3a4553;
+  --bad: #d13438; --bad-soft: #fdf3f4; --bad-line: #f1a7ab;
+  --c1: #0078d4; --c2: #8764b8; --c3: #00b7c3; --okc: #107c10; --warnc: #ffb900; --badc: #d13438;
+  --chart-grid: #e9edf2; --chart-axis: #c8d1dc;
+  --map-land: #c6ced9; --map-grid: #eff2f6;
+  --top-bg: #0f243e; --top-text: #ffffff; --top-muted: #c8daf0; --top-line: #29466a; --top-hover: #1c385b;
   --nav-bg: #ffffff;
-  --shadow: 0 1px 1px 0 rgba(0, 28, 36, .3), 1px 1px 1px 0 rgba(0, 28, 36, .15), -1px 1px 1px 0 rgba(0, 28, 36, .15);
-  --r-card: 16px; --r-btn: 20px; --r-in: 8px; --r-sm: 4px;
-  --font: "Open Sans", "Helvetica Neue", Roboto, Arial, system-ui, sans-serif;
+  --shadow: 0 1px 2px rgba(0, 32, 80, .09), 0 1px 3px rgba(0, 32, 80, .06);
+  --r-card: 14px; --r-btn: 20px; --r-in: 8px; --r-sm: 4px;
+  --font: "Segoe UI", "Open Sans", "Helvetica Neue", Roboto, Arial, system-ui, sans-serif;
   --mono: Monaco, Menlo, Consolas, "Courier Prime", "Liberation Mono", monospace;
   --nav-w: 248px;
-  --top-h: 48px;
+  --top-h: 50px;
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --bg: #0f1b2a;
-  --panel: #192534;
-  --panel-2: #1c2b3e;
-  --input: #0f1b2a;
-  --hover: #1e3047;
-  --line: #2f3e51;
-  --line-2: #414d5c;
-  --input-line: #7d8998;
-  --text: #e9ebed;
-  --text-2: #c6cbd3;
-  --muted: #9ba7b6;
-  --dim: #7d8998;
-  --accent: #539fe5;
-  --accent-hover: #89bdee;
-  --accent-soft: #1a2c44;
-  --accent-line: #3b5d82;
-  --ok: #2bb534; --ok-soft: #12261a; --ok-line: #2a6b30;
-  --warn: #e0ca57; --warn-soft: #2a2510; --warn-line: #6d5e1f;
-  --bad: #ff7a7a; --bad-soft: #2d1717; --bad-line: #7a2d2d;
-  --c1: #7c9ff2; --c2: #e07b9c; --c3: #3fbcae; --okc: #2bb534; --warnc: #ff9900; --badc: #ff5d64;
-  --chart-grid: #2a3a4f; --chart-axis: #414d5c;
-  --map-land: #415068; --map-grid: #1c2a3b;
-  --top-bg: #0f141a; --top-line: #2f3e51; --top-hover: #232f3e;
-  --nav-bg: #161d26;
-  --shadow: 0 1px 1px 0 rgba(0, 0, 0, .5), 1px 1px 1px 0 rgba(0, 0, 0, .3), -1px 1px 1px 0 rgba(0, 0, 0, .3);
+  --bg: #0c1522;
+  --panel: #132030;
+  --panel-2: #17273b;
+  --input: #0c1522;
+  --hover: #1a2d45;
+  --line: #263951;
+  --line-2: #39506d;
+  --input-line: #6d819c;
+  --text: #eef3f8;
+  --text-2: #c5d1e0;
+  --muted: #93a6bd;
+  --dim: #7488a1;
+  --accent: #4aa3f5;
+  --accent-hover: #7cc0ff;
+  --accent-soft: #142a44;
+  --accent-line: #2e679c;
+  --primary: #0078d4;
+  --primary-hover: #1a88e0;
+  --on-primary: #ffffff;
+  --ok: #3cc145; --ok-soft: #102819; --ok-line: #286e31;
+  --warn: #f2c94c; --warn-soft: #2a240e; --warn-line: #725d1d;
+  --bad: #ff7578; --bad-soft: #2f1517; --bad-line: #812e32;
+  --c1: #4aa3f5; --c2: #b48ef0; --c3: #3fd3de; --okc: #3cc145; --warnc: #ffb900; --badc: #ff5d64;
+  --chart-grid: #22354d; --chart-axis: #39506d;
+  --map-land: #384e6b; --map-grid: #172638;
+  --top-bg: #08121f; --top-line: #223854; --top-hover: #142740;
+  --nav-bg: #101b29;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .55), 0 1px 4px rgba(0, 0, 0, .35);
   color-scheme: dark;
 }
 
@@ -160,7 +163,56 @@ input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); m
 .pw-tools { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--text-2); margin-top: -6px; }
 .pw-tools label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
 .pw-tools .ok { color: var(--ok); }
-.logo-box { display: inline-flex; align-items: center; height: 28px; padding: 0 9px; border-radius: 6px; background: var(--primary); color: #0f141a; font: 800 14px var(--font); letter-spacing: .08em; }
+.auth-div { display: flex; align-items: center; gap: 10px; margin: 16px 0 4px; color: var(--muted); font-size: 12.5px; }
+.auth-div::before, .auth-div::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.pk-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.pk-row:last-child { border-bottom: 0; }
+.logo-box { display: inline-flex; align-items: center; height: 28px; padding: 0 9px; border-radius: 6px; background: var(--primary); color: #fff; font: 800 14px var(--font); letter-spacing: .08em; }
+.az-logo { width: 24px; height: 24px; flex: none; display: block; }
+.az-logo.lg { width: 38px; height: 38px; }
+.auth-brand-stack { display: flex; flex-direction: column; line-height: 1.15; }
+.auth-brand-s { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.tb-brand-sub { font: 500 13px var(--font); color: var(--top-muted); padding-left: 6px; border-left: 1px solid var(--top-line); }
+
+/* ---------- node switcher & banner ---------- */
+.node-pick { position: relative; }
+.node-btn { background: rgba(255,255,255,.06); cursor: pointer; font-family: var(--font); transition: background .15s, border-color .15s; }
+.node-btn:hover { background: var(--top-hover); border-color: #50e6ff; }
+.node-btn.remote { border-color: #50e6ff; background: rgba(0, 120, 212, .28); }
+.node-sub { color: var(--top-muted); font: 12px var(--mono); opacity: .9; }
+.node-chev { color: var(--top-muted); margin-left: 2px; }
+.node-menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 310px; z-index: 60; padding: 8px; border: 1px solid var(--line-2); border-radius: 12px; }
+.node-menu-h { font: 700 11.5px var(--font); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 6px 10px 8px; }
+.node-opt { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px; border: 0; border-radius: 8px; background: none; color: var(--text); cursor: pointer; font-family: var(--font); }
+.node-opt:hover { background: var(--hover); }
+.node-opt.on { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-line); }
+.node-opt-main { flex: 1; min-width: 0; }
+.node-opt-name { font: 700 13.5px var(--font); display: flex; align-items: center; gap: 6px; }
+.node-opt-meta { font: 12px var(--mono); color: var(--muted); margin-top: 2px; }
+.node-opt-stat { text-align: right; font: 11.5px var(--mono); color: var(--text-2); white-space: nowrap; }
+.node-menu-foot { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+
+.node-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 9px 32px; background: var(--accent-soft); border-bottom: 1px solid var(--accent-line); color: var(--text); font-size: 13.5px; }
+.node-banner b { color: var(--accent); }
+
+/* ---------- Azure topology & infra ---------- */
+.topo-vnet { border: 2px dashed var(--accent-line); border-radius: 16px; padding: 18px; background: var(--panel-2); }
+.topo-vnet-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.topo-subnets { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+.topo-subnet { background: var(--panel); border: 1px solid var(--line-2); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.topo-subnet.priv { border-color: var(--accent-line); }
+.topo-sn-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.topo-sn-meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+.topo-vm { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--panel-2); display: flex; flex-direction: column; gap: 10px; }
+.topo-vm.active-vm { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.topo-vm-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.topo-vm-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.topo-m { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
+.topo-m span { display: block; font-size: 11px; color: var(--muted); }
+.topo-m b { font: 700 14px var(--mono); color: var(--text); }
+.topo-flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; border-radius: 10px; background: var(--accent-soft); border: 1px solid var(--accent-line); font-size: 13px; margin-bottom: 16px; }
+.topo-flow .arrow { color: var(--accent); font-weight: 800; }
+.probe-out { margin: 10px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); font: 12px/1.55 var(--mono); white-space: pre-wrap; max-height: 180px; overflow: auto; }
 
 /* ---------- shell ---------- */
 #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }

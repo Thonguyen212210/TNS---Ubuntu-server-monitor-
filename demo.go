@@ -119,7 +119,7 @@ func demoLoginEvents() []LoginEvent {
 // ---------- firewall ----------
 
 var demoFW = &FWState{Backend: "demo", Active: true, Default: "deny (incoming), allow (outgoing), disabled (routed)",
-	Note: "Chế độ demo — trên Linux sẽ điều khiển ufw / firewalld / iptables thật.",
+	Note: "Demo mode — manages real ufw / firewalld / iptables on Linux.",
 	Rules: []FWRule{
 		{To: "22/tcp", Action: "ALLOW IN", From: "Anywhere", Comment: "ssh"},
 		{To: "80/tcp", Action: "ALLOW IN", From: "Anywhere", Comment: "http"},
@@ -168,7 +168,7 @@ func demoFirewallAction(q fwReq) (string, error) {
 				return "Rule deleted", nil
 			}
 		}
-		return "", fmt.Errorf("không tìm thấy rule")
+		return "", fmt.Errorf("rule not found")
 	case "add":
 		to := "Anywhere"
 		if q.Port != "" {
@@ -189,7 +189,7 @@ func demoFirewallAction(q fwReq) (string, error) {
 		}
 		return "Rule added", nil
 	}
-	return "", fmt.Errorf("op không hợp lệ")
+	return "", fmt.Errorf("invalid operation")
 }
 
 // ---------- docker ----------
@@ -256,11 +256,11 @@ func demoDockerAction(id, op string) error {
 		case "remove":
 			demoContainers = append(demoContainers[:i], demoContainers[i+1:]...)
 		default:
-			return fmt.Errorf("op không hợp lệ")
+			return fmt.Errorf("invalid operation")
 		}
 		return nil
 	}
-	return fmt.Errorf("không tìm thấy container")
+	return fmt.Errorf("container not found")
 }
 
 func demoDockerLogs(id string) string {

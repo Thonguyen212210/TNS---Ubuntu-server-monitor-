@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -89,5 +90,30 @@ func TestSplitArgs(t *testing.T) {
 	a := splitArgs(`-A INPUT -s 1.2.3.4/32 -m comment --comment "bad bot" -j DROP`)
 	if len(a) != 10 || a[7] != "bad bot" {
 		t.Fatalf("%q", a)
+	}
+}
+
+func TestHostAllowed(t *testing.T) {
+	dom := "tnslab.eastasia.cloudapp.azure.com"
+	cases := []struct {
+		host, remote string
+		ok           bool
+	}{
+		{"tnslab.eastasia.cloudapp.azure.com", "1.2.3.4:5555", true},
+		{"tnslab.eastasia.cloudapp.azure.com:443", "1.2.3.4:5555", true},
+		{"TNSLAB.EASTASIA.CLOUDAPP.AZURE.COM", "1.2.3.4:5555", true},
+		{"20.205.12.112", "1.2.3.4:5555", false},
+		{"20.205.12.112:443", "1.2.3.4:5555", false},
+		{"100.71.211.109:443", "100.127.127.35:5555", false},
+		{"evil.example.com", "1.2.3.4:5555", false},
+		{"127.0.0.1:443", "127.0.0.1:5555", true},
+	}
+	for _, c := range cases {
+		req := httptest.NewRequest("GET", "https://"+c.host+"/", nil)
+		req.Host = c.host
+		req.RemoteAddr = c.remote
+		if got := hostAllowed(dom, req); got != c.ok {
+			t.Fatalf("host=%q remote=%q: got %v want %v", c.host, c.remote, got, c.ok)
+		}
 	}
 }

@@ -195,7 +195,7 @@ func collectSSHEvents() ([]LoginEvent, string, string) {
 		if readAny {
 			return evs, filepath.Base(base), ""
 		}
-		return nil, "none", "Không đọc được " + base + " — hãy chạy TNS bằng root (hoặc thêm user vào nhóm adm)."
+		return nil, "none", "Unable to read " + base + " — run as root (or add user to the adm group)."
 	}
 	if hasCmd("journalctl") {
 		out, err := runCmd(60*time.Second, "journalctl", "-t", "sshd", "-t", "sshd-session", "-o", "short-iso", "--no-pager", "--since", "-30d")
@@ -204,7 +204,7 @@ func collectSSHEvents() ([]LoginEvent, string, string) {
 			return evs, "journald", ""
 		}
 	}
-	return nil, "none", "Không tìm thấy log SSH (auth.log / secure / journald) trên máy này."
+	return nil, "none", "No SSH logs found (auth.log / secure / journald) on this machine."
 }
 
 func getLoginEvents() ([]LoginEvent, string, string) {
@@ -213,7 +213,7 @@ func getLoginEvents() ([]LoginEvent, string, string) {
 	if time.Since(loginAt) > 60*time.Second {
 		evs, src, note := collectSSHEvents()
 		if len(evs) == 0 && *flagDemo {
-			evs, src, note = demoLoginEvents(), "demo", "Dữ liệu minh hoạ (chế độ demo) — trên server Linux thật sẽ đọc từ auth.log/journald."
+			evs, src, note = demoLoginEvents(), "demo", "Sample data (demo mode) — reads real auth.log/journald on Linux."
 		}
 		loginCache, loginSource, loginNote, loginAt = evs, src, note, time.Now()
 	}
@@ -243,7 +243,7 @@ func lookupGeo(ipStr string) (Geo, bool) {
 		return Geo{}, false
 	}
 	if isLocalIP(ip) {
-		return Geo{Country: "Mạng nội bộ", CC: "LAN", Local: true}, true
+		return Geo{Country: "Private Network", CC: "LAN", Local: true}, true
 	}
 	if g, ok := demoGeo(ipStr); ok {
 		return g, true
@@ -297,7 +297,7 @@ func geoWorker() {
 			for _, r := range res {
 				g := Geo{Country: r.Country, CC: r.CountryCode, City: r.City, Lat: r.Lat, Lon: r.Lon}
 				if r.Status != "success" {
-					g = Geo{Country: "Không rõ", CC: "??"}
+					g = Geo{Country: "Unknown", CC: "??"}
 				}
 				geoCache[r.Query] = g
 				delete(geoQueue, r.Query)
@@ -380,12 +380,12 @@ func handleLogins(w http.ResponseWriter, r *http.Request) {
 			totals["success"]++
 			if e.Service == "ssh" && a.Failed >= 5 {
 				alerts = append(alerts, alert{Level: "crit", T: e.T, IP: e.IP,
-					Title:  "Đăng nhập thành công sau tấn công dò mật khẩu",
-					Detail: "IP " + e.IP + " đã thất bại " + itoa(a.Failed) + " lần rồi đăng nhập thành công vào user '" + e.User + "'."})
+					Title:  "Successful login after brute-force attempts",
+					Detail: "IP " + e.IP + " failed " + itoa(a.Failed) + " times before logging in as '" + e.User + "'."})
 			}
 			if e.Service == "ssh" && e.User == "root" && e.Method == "password" {
-				alerts = append(alerts, alert{Level: "warn", T: e.T, IP: e.IP, Title: "Root đăng nhập bằng mật khẩu",
-					Detail: "Nên tắt PasswordAuthentication / PermitRootLogin trong sshd_config."})
+				alerts = append(alerts, alert{Level: "warn", T: e.T, IP: e.IP, Title: "Root password login",
+					Detail: "Consider disabling PasswordAuthentication / PermitRootLogin in sshd_config."})
 			}
 			if a.Geo != nil && !a.Geo.Local {
 				okCountries[a.Geo.CC] = append(okCountries[a.Geo.CC], e.T)
@@ -422,8 +422,8 @@ func handleLogins(w http.ResponseWriter, r *http.Request) {
 			if c := byCC[cc]; c != nil {
 				name = c.Country
 			}
-			alerts = append(alerts, alert{Level: "warn", T: ts[0], Title: "Đăng nhập từ quốc gia mới: " + name,
-				Detail: "Lần đầu tiên có đăng nhập thành công từ " + name + " trong 30 ngày qua."})
+			alerts = append(alerts, alert{Level: "warn", T: ts[0], Title: "Login from new country: " + name,
+				Detail: "First successful login from " + name + " in the last 30 days."})
 		}
 	}
 
@@ -439,8 +439,8 @@ func handleLogins(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if a.Failed >= 50 && a.Success == 0 && now.Sub(a.Last) < 24*time.Hour {
-			alerts = append(alerts, alert{Level: "info", T: a.Last, IP: a.IP, Title: "Dò mật khẩu: " + a.IP,
-				Detail: itoa(a.Failed) + " lần thất bại. Có thể chặn IP này bằng tường lửa."})
+			alerts = append(alerts, alert{Level: "info", T: a.Last, IP: a.IP, Title: "Brute-force activity: " + a.IP,
+				Detail: itoa(a.Failed) + " failed attempts. Consider blocking this IP in the firewall."})
 		}
 		ips = append(ips, a)
 	}

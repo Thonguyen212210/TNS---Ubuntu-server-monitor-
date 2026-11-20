@@ -29,10 +29,10 @@ type FileEntry struct {
 
 func cleanPath(p string) (string, error) {
 	if p == "" {
-		return "", fmt.Errorf("thiếu đường dẫn")
+		return "", fmt.Errorf("missing path")
 	}
 	if !filepath.IsAbs(p) {
-		return "", fmt.Errorf("đường dẫn phải tuyệt đối")
+		return "", fmt.Errorf("path must be absolute")
 	}
 	return filepath.Clean(p), nil
 }
@@ -208,7 +208,7 @@ func handleFilesText(w http.ResponseWriter, r *http.Request) {
 	}
 	fi, err := os.Stat(p)
 	if err != nil || fi.IsDir() {
-		httpErr(w, 404, "không mở được file")
+		httpErr(w, 404, "unable to open file")
 		return
 	}
 	f, err := os.Open(p)
@@ -242,7 +242,7 @@ func handleFilesSave(w http.ResponseWriter, r *http.Request) {
 	mode := os.FileMode(0o644)
 	if fi, err := os.Stat(p); err == nil {
 		if fi.Size() > maxTextSize {
-			httpErr(w, 400, "file quá lớn để sửa trên web")
+			httpErr(w, 400, "file is too large to edit in the browser")
 			return
 		}
 		mode = fi.Mode().Perm()
@@ -332,11 +332,11 @@ func handleFilesOp(w http.ResponseWriter, r *http.Request) {
 		from, err1 := cleanPath(q.Path)
 		to, err2 := cleanPath(q.To)
 		if err1 != nil || err2 != nil || protectedPaths[from] {
-			httpErr(w, 400, "đường dẫn không hợp lệ")
+			httpErr(w, 400, "invalid path")
 			return
 		}
 		if _, err := os.Lstat(to); err == nil {
-			httpErr(w, 409, "đích đã tồn tại")
+			httpErr(w, 409, "destination already exists")
 			return
 		}
 		if err := os.Rename(from, to); err != nil {
@@ -347,7 +347,7 @@ func handleFilesOp(w http.ResponseWriter, r *http.Request) {
 		p, err := cleanPath(q.Path)
 		m, perr := strconv.ParseUint(q.Mode, 8, 32)
 		if err != nil || perr != nil || m > 0o7777 {
-			httpErr(w, 400, "mode không hợp lệ")
+			httpErr(w, 400, "invalid mode")
 			return
 		}
 		if err := os.Chmod(p, os.FileMode(m)); err != nil {
@@ -358,7 +358,7 @@ func handleFilesOp(w http.ResponseWriter, r *http.Request) {
 		for _, raw := range q.Paths {
 			p, err := cleanPath(raw)
 			if err != nil || protectedPaths[p] {
-				httpErr(w, 400, "không được xoá "+raw)
+				httpErr(w, 400, "cannot delete "+raw)
 				return
 			}
 			if err := os.RemoveAll(p); err != nil {
@@ -367,7 +367,7 @@ func handleFilesOp(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	default:
-		httpErr(w, 400, "op không hợp lệ")
+		httpErr(w, 400, "invalid operation")
 		return
 	}
 	writeJSON(w, map[string]bool{"ok": true})

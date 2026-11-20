@@ -85,12 +85,12 @@ func handleDockerList(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, demoDocker())
 			return
 		}
-		writeJSON(w, map[string]any{"available": false, "note": "Không tìm thấy Docker (docker.sock)."})
+		writeJSON(w, map[string]any{"available": false, "note": "Docker not found (docker.sock unavailable)."})
 		return
 	}
 	b, code, err := dockerDo("GET", "/containers/json?all=1", 10*time.Second)
 	if err != nil || code != 200 {
-		msg := "Không kết nối được Docker"
+		msg := "Failed to connect to Docker"
 		if err != nil {
 			msg += ": " + err.Error()
 		} else {
@@ -230,7 +230,7 @@ func handleDockerAction(w http.ResponseWriter, r *http.Request) {
 	case "rmi":
 		method, path = "DELETE", "/images/"+id
 	default:
-		httpErr(w, 400, "op không hợp lệ")
+		httpErr(w, 400, "invalid operation")
 		return
 	}
 	b, code, err := dockerDo(method, path, 60*time.Second)
@@ -259,7 +259,7 @@ func handleDockerLogs(w http.ResponseWriter, r *http.Request) {
 	}
 	b, code, err := dockerDo("GET", "/containers/"+url.PathEscape(id)+"/logs?stdout=1&stderr=1&tail=400&timestamps=1", 20*time.Second)
 	if err != nil || code != 200 {
-		httpErr(w, 500, "không lấy được log")
+		httpErr(w, 500, "failed to fetch logs")
 		return
 	}
 	writeJSON(w, map[string]string{"logs": demuxDocker(b)})
